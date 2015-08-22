@@ -6,7 +6,7 @@ io.use(p2pserver);
 daemons = [];
 function daemon_emit(id, obj) {
   if(daemons.length) {
-    var daemon = daemons[(Math.random() * daemons) |0];
+    var daemon = daemons[(Math.random() * daemons.length) |0];
     daemon.emit(id, obj);
     return daemon;
   }
