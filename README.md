@@ -1,11 +1,14 @@
 # mubackend
 
-This is a backend server that is not there. 
+This is minimal generic backend. 
 
-It has the following features:
+Not fully implemented yet.
 
-- Starts a socket.io peer2peer server.
-- Checks every connected peer if it is a daemon (user in a connected CouchDB).
-- Runs a HTTP-server, and forwards GET-requests to to load-balanced daemon peers. 
-  - Several requests at the same time for an url, only yield one request to the daemon.
-- Send logging to load-balanced daemon peers.
+Intended features:
+
+- Authentication: login via oauth(github,twitter,wordpress,etc.)
+- Create databases (one public, and one private CouchDB per authenticated user)
+- Communication between users
+  - send message to logged-in user by username, only authenticated users can receive
+  - socket.io-p2p
+
