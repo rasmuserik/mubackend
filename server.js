@@ -22,12 +22,12 @@ function uid() { return btoa(crypto.randomBytes(12)); }
 
 // # CouchDB
 var couchUrl = "http://" + config.couchdb.user + ":" + 
-                  config.couchdb.password + "@localhost:5984/";
+config.couchdb.password + "@localhost:5984/";
 function getUser(user, callback) {
   request.get(couchUrl + '_users/org.couchdb.user:' + user, 
-    function(err, response, body) {
-      callback(err?{error:"request error"}:JSON.parse(body));
-    });
+      function(err, response, body) {
+        callback(err?{error:"request error"}:JSON.parse(body));
+      });
 }
 function createUser(user, fullname, password) {
   request.put({
@@ -40,40 +40,79 @@ function createUser(user, fullname, password) {
       roles: [], 
       type: "user"
     }
- }, function(err, _, body) {
-   console.log("createUser:", user, body);
- });
+  }, function(err, _, body) {
+    console.log("createUser:", user, body);
+  });
 }
+function dbName(user, id) {
+  user = user.replace(/_/g, "-");
+  var dbName = "mu_" + user + "_" + encodeURIComponent(id);
+  dbName = dbName.toLowerCase();
+  dbName = dbName.replace(/[^a-z_$()+-]/g, "$");
+  return dbName; 
+}
+function createDatabase(user, id, isPrivate) {
+  var name = dbName(user, id);
+  request.put({
+    url: couchUrl + name,
+    json: {}
+  }, function(err, _, body) {
+    console.log("createDatabase:", name, body);
+    if(isPrivate) {
+      request.put({
+        url: couchUrl + name + "/_security",
+        json: {"admins": { "names": [ user], "roles": [] },
+          "members": { "names": [ user ], "roles": []}}
+      }, function(err, _, body) {
+        if(err || body.error) console.log("createDatabaseSecurityError:", name, body);
+      });
+    } else { // !isPrivate
+      request.put({
+        url: couchUrl + name + "/_design/readonly",
+        json: {
+          validate_doc_update:
+            'function(_1, _2, user){if(user.name!=="' + name + '")throw "Forbidden";}'
+        }
+      }, function(err, _, body) {
+        console.log(err, _, body);
+
+        if(err || body.error) console.log("createDatabaseDesignError:", name, body);
+      });
+    }
+  });
+}
+createDatabase("hello", "world", false);
+createDatabase("hello", "home", true);
 
 // # Login
 var loginRequests = {};
 
 function loginHandler(provider) {
-    return function(req, res) {
-      passport.authenticate(provider)(req, res, function(profile) { 
-        if(profile.provider === "Wordpress") profile.id = profile._json.ID;
-        var user = encodeURIComponent(profile.provider + "_" + profile.id);
-        console.log("LOGIN", user, JSON.stringify(profile._raw));
+  return function(req, res) {
+    passport.authenticate(provider)(req, res, function(profile) { 
+      if(profile.provider === "Wordpress") profile.id = profile._json.ID;
+      var user = encodeURIComponent(profile.provider + "_" + profile.id);
+      console.log("LOGIN", user, JSON.stringify(profile._raw));
 
-        if(!profile.id) {
-          return res.redirect(app);
+      if(!profile.id) {
+        return res.redirect(app);
+      }
+      getUser(user, function(o) {
+        var pw;
+        if(!o.error) {
+          pw = o.plain_pw;
+        } else {
+          pw = uid();
+          createUser(user,profile.displayName || profile.name, pw);
         }
-        getUser(user, function(o) {
-          var pw;
-          if(!o.error) {
-            pw = o.plain_pw;
-          } else {
-            pw = uid();
-            createUser(user,profile.displayName || profile.name, pw);
-          }
 
-          var token = uid();
-          var app = req.session.app;
-          loginRequests[token] = {user: user, password: pw};
-          res.redirect(app + "solsortLoginToken=" + token);
-        });
+        var token = uid();
+        var app = req.session.app;
+        loginRequests[token] = {user: user, password: pw, time: Date.now()};
+        res.redirect(app + "solsortLoginToken=" + token);
       });
-    };
+    });
+  };
 }
 
 function login(access, refresh, profile, done) { return done(profile); }
@@ -82,7 +121,7 @@ function addStrategy(name, Strategy, opt) {
   app.get('/auth/' + name, 
       function(req, res) {
         req.session.app = req.query.app
-        return passport.authenticate(name, opt)(req, res);
+          return passport.authenticate(name, opt)(req, res);
       });
   app.get('/auth/' + name + '/callback', loginHandler(name));
 }

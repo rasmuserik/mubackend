@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "btoa": "^1.1.2",
     "express": "^4.13.3",
     "express-session": "^1.12.1",
     "passport": "^0.3.2",
