@@ -10,15 +10,12 @@ request = require("request");
 var app = express();
 app.use(session(config.expressSession));
 var server = require('http').Server(app);
-var io = require('socket.io')(server);
-var p2pserver = require('socket.io-p2p-server').Server;
-io.use(p2pserver);
 
 server.listen(4078);
 
 // # Util
 
-function uid() { return btoa(crypto.randomBytes(12)); }
+function uniqueId() { return btoa(crypto.randomBytes(12)); }
 
 // # CouchDB
 var couchUrl = "http://" + config.couchdb.user + ":" + 
@@ -44,45 +41,40 @@ function createUser(user, fullname, password) {
     console.log("createUser:", user, body);
   });
 }
-function dbName(user, id) {
+function dbName(user, id, isPrivate) { // ##
   user = user.replace(/_/g, "-");
-  var dbName = "mu_" + user + "_" + encodeURIComponent(id);
+  var dbName = "mu_" + user + (isPrivate?"_600_":"_644_") + encodeURIComponent(id);
   dbName = dbName.toLowerCase();
   dbName = dbName.replace(/[^a-z_$()+-]/g, "$");
   return dbName; 
 }
-function createDatabase(user, id, isPrivate) {
-  var name = dbName(user, id);
+function createDatabase(user, id, isPrivate, callback) { // ##
+  var name = dbName(user, id, isPrivate);
   request.put({
     url: couchUrl + name,
     json: {}
   }, function(err, _, body) {
-    console.log("createDatabase:", name, body);
+    callback(err || body.error);
     if(isPrivate) {
       request.put({
         url: couchUrl + name + "/_security",
-        json: {"admins": { "names": [ user], "roles": [] },
+        json: {"admins": { "names": [], "roles": [] },
           "members": { "names": [ user ], "roles": []}}
       }, function(err, _, body) {
         if(err || body.error) console.log("createDatabaseSecurityError:", name, body);
       });
-    } else { // !isPrivate
-      request.put({
-        url: couchUrl + name + "/_design/readonly",
-        json: {
-          validate_doc_update:
-            'function(_1, _2, user){if(user.name!=="' + name + '")throw "Forbidden";}'
-        }
-      }, function(err, _, body) {
-        console.log(err, _, body);
-
-        if(err || body.error) console.log("createDatabaseDesignError:", name, body);
-      });
-    }
+    } 
+    request.put({
+      url: couchUrl + name + "/_design/readonly",
+      json: {
+        validate_doc_update:
+          'function(_1, _2, user){if(user.name!=="' + name + '")throw "Forbidden";}'
+      }
+    }, function(err, _, body) {
+      if(err || body.error) console.log("createDatabaseDesignError:", name, body);
+    });
   });
 }
-createDatabase("hello", "world", false);
-createDatabase("hello", "home", true);
 
 // # Login
 var loginRequests = {};
@@ -102,13 +94,16 @@ function loginHandler(provider) {
         if(!o.error) {
           pw = o.plain_pw;
         } else {
-          pw = uid();
+          pw = uniqueId();
           createUser(user,profile.displayName || profile.name, pw);
         }
 
-        var token = uid();
+        var token = uniqueId();
         var app = req.session.app;
         loginRequests[token] = {user: user, password: pw, time: Date.now()};
+        if(app.indexOf("#") === -1) {
+          app += "#"
+        }
         res.redirect(app + "solsortLoginToken=" + token);
       });
     });
@@ -120,8 +115,8 @@ function addStrategy(name, Strategy, opt) {
   passport.use(new Strategy(config[name], login));
   app.get('/auth/' + name, 
       function(req, res) {
-        req.session.app = req.query.app
-          return passport.authenticate(name, opt)(req, res);
+        req.session.app = req.url.replace(/^[^?]*./);
+        return passport.authenticate(name, opt)(req, res);
       });
   app.get('/auth/' + name + '/callback', loginHandler(name));
 }
@@ -133,3 +128,94 @@ addStrategy('linkedin', require("passport-linkedin"));
 addStrategy('google', require("passport-google-oauth").OAuth2Strategy, {scope: 'profile'});
 addStrategy('facebook', require("passport-facebook"));
 addStrategy('wordpress', require("passport-wordpress").Strategy, {scope: 'auth'});
+
+// # socket.io, including message-queue(non-threadable)
+
+var io = require('socket.io')(server);
+var p2pserver = require('socket.io-p2p-server').Server;
+io.use(p2pserver);
+
+// ## message queue
+var connectionSubs= {};
+var subscribers = {};
+var messages = {};
+function getList(o, name) {
+  var result = o[name];
+  if(!result) {
+    result = [];
+    o[name] = result;
+  }
+  return result;
+}
+function unsubscribe(socket, user) {
+  var subs = getList(subscribers, user);
+  var pos = subs.indexOf(socket) ;
+  if(pos !== -1) {
+    subs[pos] = subs[subs.length - 1];
+    subs.pop();
+  }
+}
+
+io.on("connection", function(socket) { // ##
+  socket.on("login", function(token, f) { // ###
+    f(loginRequests[token]);
+    delete loginRequests[token];
+  });
+  socket.on("dbName", function(user, db, isPrivate, f) { // ###
+    f(dbName(user,db,isPrivate));
+  });
+  socket.on("createDatabase", function(user, db, isPrivate, password, f) { // ###
+    request.get(couchUrl + "_users/org.couchdb.user:" + user, function(err, _, body) {
+      if(password === body.password) {
+        createDatabase(user, db, isPrivate,f);
+      } else {
+        f("Login error");
+      }
+    });
+  });
+  socket.on("subscribe", function(user, password) { // ###
+    request.get(couchUrl + "_users/org.couchdb.user:" + user, function(err, _, body) {
+      if(password === body.password) {
+        getList(connectionSubs, socket.id).push(user);
+        getList(subscribers, user).push(socket);
+        var msgs = getList(messages, user);
+        while(msgs.length) {
+          socket.emit("message", user, msgs.pop());
+        }
+      }
+    });
+  });
+  socket.on("unsubscribe", function(user) { // ###
+    unsubscribe(socket, user);
+  });
+  socket.on("message", function(user, msg) { // ###
+    var listeners = getList(subscriber, user);
+    if(listeners.length) {
+      listeners[listeners.length*Math.random() |0].emit("message", msg);
+    } else {
+      getList(messages, user).push(msg);
+    }
+  });
+  socket.on("disconnect", function() { // ###
+    var subs = getList(connectionSubs, socket.id);
+    while(subs.length) {
+      unsubscribe(socket, subs.pop());
+    }
+    delete connectionSubs[socket.id];
+  });
+}); // ###
+// # CORS
+app.get('/cors/', function(req, res) {
+  request.get(req.url.replace(/^[^?]*./, ""), function(err, response, body) {
+    res.header("Content-Type", "text/plain");
+    res.end(body);
+  });
+});
+// # test
+app.get('/muclient/', function(req,res) {
+  res.end("<html><body><script src=https://dev.solsort.com/socket.io/socket.io.js></script>" +
+      "<script src=/client.js></script></body></html>");
+});
+app.get('/muclient/client.js', function(req,res) {
+  res.end(fs.readFileSync("client.js"));
+});
