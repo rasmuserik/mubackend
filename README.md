@@ -26,6 +26,10 @@ muBackend is just the empty space between the following technologies:
 - `backend.js the server side code
 - `dev.sh` shell script used during development
 
+## Dev-dependencies
+
+On ubuntu linux: `apt-get install inotify-tools couchdb npm`
+
 # intro.js (literate code)
 
     if(!location.hash) {
