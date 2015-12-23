@@ -1,3 +1,5 @@
+// ## Server (backend.js)
+//
 var express = require('express');
 var session = require('express-session');
 var crypto = require('crypto');
@@ -5,7 +7,7 @@ var fs = require('fs');
 var passport = require("passport");
 var config = require("/solsort/config.json");
 var btoa = require("btoa");
-request = require("request");
+var request = require("request");
 
 var app = express();
 app.use(session(config.expressSession));
@@ -13,11 +15,13 @@ var server = require('http').Server(app);
 
 server.listen(4078);
 
-// # Util
+// ## Util
+//
 
 function uniqueId() { return btoa(crypto.randomBytes(12)); }
 
-// # CouchDB
+// ## CouchDB
+//
 var couchUrl = "http://" + config.couchdb.user + ":" + 
 config.couchdb.password + "@localhost:5984/";
 function getUser(user, callback) {
@@ -41,14 +45,14 @@ function createUser(user, fullname, password) {
     console.log("createUser:", user, body);
   });
 }
-function dbName(user, id, isPrivate) { // ##
+function dbName(user, id, isPrivate) { // ###
   user = user.replace(/_/g, "-");
   var dbName = "mu_" + user + (isPrivate?"_600_":"_644_") + encodeURIComponent(id);
   dbName = dbName.toLowerCase();
   dbName = dbName.replace(/[^a-z_$()+-]/g, "$");
   return dbName; 
 }
-function createDatabase(user, id, isPrivate, callback) { // ##
+function createDatabase(user, id, isPrivate, callback) { // ###
   var name = dbName(user, id, isPrivate);
   request.put({
     url: couchUrl + name,
@@ -76,7 +80,8 @@ function createDatabase(user, id, isPrivate, callback) { // ##
   });
 }
 
-// # Login
+// ## Login
+//
 var loginRequests = {};
 
 function loginHandler(provider) {
@@ -115,7 +120,7 @@ function addStrategy(name, Strategy, opt) {
   passport.use(new Strategy(config[name], login));
   app.get('/auth/' + name, 
       function(req, res) {
-        req.session.app = req.url.replace(/^[^?]*./);
+        req.session.app = req.url.replace(/^[^?]*./, "");
         return passport.authenticate(name, opt)(req, res);
       });
   app.get('/auth/' + name + '/callback', loginHandler(name));
@@ -129,13 +134,15 @@ addStrategy('google', require("passport-google-oauth").OAuth2Strategy, {scope: '
 addStrategy('facebook', require("passport-facebook"));
 addStrategy('wordpress', require("passport-wordpress").Strategy, {scope: 'auth'});
 
-// # socket.io, including message-queue(non-threadable)
+// ## socket.io, including message-queue(non-threadable)
+//
 
 var io = require('socket.io')(server);
 var p2pserver = require('socket.io-p2p-server').Server;
 io.use(p2pserver);
 
-// ## message queue
+// ### message queue
+//
 var connectionSubs= {};
 var subscribers = {};
 var messages = {};
@@ -156,15 +163,15 @@ function unsubscribe(socket, user) {
   }
 }
 
-io.on("connection", function(socket) { // ##
-  socket.on("login", function(token, f) { // ###
+io.on("connection", function(socket) { // ###
+  socket.on("login", function(token, f) { // ####
     f(loginRequests[token]);
     delete loginRequests[token];
   });
-  socket.on("dbName", function(user, db, isPrivate, f) { // ###
+  socket.on("dbName", function(user, db, isPrivate, f) { // ####
     f(dbName(user,db,isPrivate));
   });
-  socket.on("createDatabase", function(user, db, isPrivate, password, f) { // ###
+  socket.on("createDatabase", function(user, db, isPrivate, password, f) { // ####
     request.get(couchUrl + "_users/org.couchdb.user:" + user, function(err, _, body) {
       if(password === body.password) {
         createDatabase(user, db, isPrivate,f);
@@ -173,7 +180,7 @@ io.on("connection", function(socket) { // ##
       }
     });
   });
-  socket.on("subscribe", function(user, password) { // ###
+  socket.on("subscribe", function(user, password) { // ####
     request.get(couchUrl + "_users/org.couchdb.user:" + user, function(err, _, body) {
       if(password === body.password) {
         getList(connectionSubs, socket.id).push(user);
@@ -185,10 +192,10 @@ io.on("connection", function(socket) { // ##
       }
     });
   });
-  socket.on("unsubscribe", function(user) { // ###
+  socket.on("unsubscribe", function(user) { // ####
     unsubscribe(socket, user);
   });
-  socket.on("message", function(user, msg) { // ###
+  socket.on("message", function(user, msg) { // ####
     var listeners = getList(subscriber, user);
     if(listeners.length) {
       listeners[listeners.length*Math.random() |0].emit("message", msg);
@@ -196,26 +203,36 @@ io.on("connection", function(socket) { // ##
       getList(messages, user).push(msg);
     }
   });
-  socket.on("disconnect", function() { // ###
+  socket.on("disconnect", function() { // ####
     var subs = getList(connectionSubs, socket.id);
     while(subs.length) {
       unsubscribe(socket, subs.pop());
     }
     delete connectionSubs[socket.id];
   });
-}); // ###
-// # CORS
+}); // ####
+// ## CORS
+//
 app.get('/cors/', function(req, res) {
   request.get(req.url.replace(/^[^?]*./, ""), function(err, response, body) {
     res.header("Content-Type", "text/plain");
     res.end(body);
   });
 });
-// # test
-app.get('/muclient/', function(req,res) {
-  res.end("<html><body><script src=https://dev.solsort.com/socket.io/socket.io.js></script>" +
-      "<script src=/client.js></script></body></html>");
+
+// ## Hosting of static resources
+//
+app.get('/', function(req,res) {
+  res.end("<html><body>" +
+      "<script src=/mu.js></script>" +
+      "<script src=/intro.js></script>" +
+      "</body></html>");
 });
-app.get('/muclient/client.js', function(req,res) {
-  res.end(fs.readFileSync("client.js"));
+var muJs = fs.readFileSync("mu.js");
+app.get('/mu.js', function(req,res) {
+  res.end(muJs);
+});
+var introJs =fs.readFileSync("intro.js") 
+app.get('/intro.js', function(req,res) {
+  res.end(introJs);
 });
