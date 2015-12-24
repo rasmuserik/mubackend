@@ -39,8 +39,17 @@ On ubuntu linux: `apt-get install inotify-tools couchdb npm`
 # Client (mu.js)
 
     (function(window) {
+      "use strict";
     })(window);
 ## Server (backend.js)
+
+Routes:
+
+- /auth/$PROVIDER/?RETURN_URL
+- /cors/?$URL
+- /socket.io/
+- /mu-demo.html /intro.js 
+- /mu.js
 
     var express = require('express');
     var session = require('express-session');
@@ -264,7 +273,7 @@ On ubuntu linux: `apt-get install inotify-tools couchdb npm`
 
 ## Hosting of static resources
 
-    app.get('/', function(req,res) {
+    app.get('/mu-demo.html', function(req,res) {
       res.end("<html><body>" +
           "<script src=/mu.js></script>" +
           "<script src=/intro.js></script>" +

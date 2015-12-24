@@ -1,5 +1,13 @@
 // ## Server (backend.js)
 //
+// Routes:
+//
+// - /auth/$PROVIDER/?RETURN_URL
+// - /cors/?$URL
+// - /socket.io/
+// - /mu-demo.html /intro.js 
+// - /mu.js
+//
 var express = require('express');
 var session = require('express-session');
 var crypto = require('crypto');
@@ -222,7 +230,7 @@ app.get('/cors/', function(req, res) {
 
 // ## Hosting of static resources
 //
-app.get('/', function(req,res) {
+app.get('/mu-demo.html', function(req,res) {
   res.end("<html><body>" +
       "<script src=/mu.js></script>" +
       "<script src=/intro.js></script>" +
