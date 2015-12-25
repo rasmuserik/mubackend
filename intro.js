@@ -1,5 +1,25 @@
 // # muBackend
 //
+// In-progress, - not done yet...
+//
+// ## API-thoughts
+//
+// - auth
+//   - mu.backend(url)
+//   - mu.userId
+//   - mu.login(provider) -> page-reload
+//   - mu.logout()
+// - discovery - only a user can tag itself
+//   - mu.lookup(tag) -> list of user-ids with given tag
+//   - mu.register(tag, true/false) -> register/deregister current user as having a tag
+// - db
+//   - mu.newPouchDB(userId, db) -> pouchdb, connected to remote db
+// - communication
+//   - on(chan, f) - chan has the form `userId:...` or `*:...`. Only logged-in user can listen on userId.
+//   - removeListener(chan, f)
+//   - emit(chan, message) - emit to all listeners (on network if available)
+//   - emitOnce(chan, message) - emit to one random listener (on network if available)
+//
 // ## Introduction
 // ### The name
 //

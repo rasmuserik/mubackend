@@ -7,5 +7,5 @@ do
   sleep 0.1
   node backend.js &
   echo $! > .pid
-  sleep 1
+  sleep 3
 done
