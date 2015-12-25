@@ -2,22 +2,37 @@
 //
 // In-progress, - not done yet...
 //
+// Goal:
+//
+// - Support noBackend applications
+//   - persist/sync storage
+//   - communicate between peers
+//   - peer discovery
+// - Should be decentralisable, - start out with traditional 
+//   client-server architecture, but keep in mind how it could
+//   be completely decentralised/p2p later on.
+//
 // ## API-thoughts
 //
-// Client:
+// ### Client:
 //
 // - mu = new MuBackend(url)
 // - mu.userIds
 // - mu.login(provider) -> page-reload
 // - mu.logout()
 //
+// #### Storage
+//
 // - mu.newPouchDB(userId, db) -> pouchdb, connected to remote db
+//
+// #### Messaging
 //
 // - mu.on(message-chan, f) - chan has the form `userId:...` or `*:...`. Only logged-in user can listen on userId.
 // - mu.removeListener(message-chan, f)
 // - mu.emit(message-chan, message) - emit to all listeners (on network if available)
 // - mu.emitOnce(message-chan, message) - emit to one random listener (on network if available)
 //
+// #### Directory
 // - mu.findTagged(tag) -> promise of list of user-ids with given tag
 // - mu.tagSelf(tag, true/false) -> register/deregister current user as having a tag
 //
