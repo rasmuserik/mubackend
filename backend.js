@@ -7,14 +7,9 @@
 // - /socket.io/
 // - /mu-demo.html /intro.js
 // - /mu.js
+// 
+// ## Load dependencies
 //
-var express = require('express');
-var session = require('express-session');
-var crypto = require('crypto');
-var fs = require('fs');
-var passport = require('passport');
-var btoa = require('btoa');
-var request = require('request');
 
 // ## Load config
 //
@@ -24,29 +19,25 @@ if (configFile.slice(-5) !== '.json') {
   process.exit(-1);
 }
 var config = require(configFile);
-console.log(config);
-
 // ### Default configuration
 //
 config.port = config.port || 4078;
 
 // ## start express server
-var app = express();
-app.use(session(config.expressSession));
+var app = require('express')();
+app.use(require('express-session')(config.expressSession));
 var server = require('http').Server(app);
-
 server.listen(config.port);
-
 // ## Util
 //
-
+var crypto = require('crypto');
+var btoa = require('btoa');
 function uniqueId () { return btoa(crypto.randomBytes(12)); }
-
 // ## CouchDB
 //
+var request = require('request');
 var couchUrl = config.couchdb.url.replace('//', '//' +
   config.couchdb.user + ':' + config.couchdb.password);
-
 function getUser (user, callback) {
   request.get(couchUrl + '_users/org.couchdb.user:' + user,
     function (err, response, body) {
@@ -94,7 +85,8 @@ function createDatabase (user, id, isPrivate, callback) { // ###
     request.put({
       url: couchUrl + name + '/_design/readonly',
       json: {
-        validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + name + '")throw "Forbidden";}'
+        validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
+                                 name + '")throw "Forbidden";}'
       }
     }, function (err, _, body) {
       if (err || body.error) console.log('createDatabaseDesignError:', name, body);
@@ -104,6 +96,7 @@ function createDatabase (user, id, isPrivate, callback) { // ###
 
 // ## Login
 //
+var passport = require('passport');
 var loginRequests = {};
 
 function loginHandler (provider) {
@@ -247,6 +240,7 @@ app.get('/cors/', function (req, res) {
 
 // ## Hosting of static resources
 //
+var fs = require('fs');
 app.get('/mu-demo.html', function (req, res) {
   res.end('<html><body>' +
     '<script src=/mu.js></script>' +
