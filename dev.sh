@@ -7,5 +7,5 @@ do
     sed -e "s/^[^/]/    \0/" | sed -e s'/^[/][/] //' | sed -e s/^..$// > README.md
   node backend.js $@ &
   echo $! > .pid
-  sleep 1
+  sleep 3
 done
