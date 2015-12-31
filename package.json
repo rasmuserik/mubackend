@@ -1,4 +1,8 @@
 {
+  "name": "mubackend",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "rasmuserik/mubackend",
   "dependencies": {
     "btoa": "^1.1.2",
     "express": "^4.13.3",
