@@ -1,5 +1,5 @@
 // # Client (mu.js)
 //
-(function(window) {
-  "use strict";
-})(window);
+;(function (window) {
+  'use strict'
+})(window)
