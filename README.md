@@ -240,16 +240,6 @@ Routes:
     addStrategy('facebook', require('passport-facebook'));
     addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'});
 
-addStrategy('persona', require('persona-pass').Strategy, {audience: config.site});
-    app.get('/auth/persona', function (req, res) {
-      res.end('<script src=https://login.persona.org/include.js></script>' +
-        '<button onclick=navigator.id.get()>a</button>'
-      // '<script>' +
-      // 'navigator.id.watch({onlogin:function(a){location.href+="callback?"+encodeURIComponent(a)}});' +
-      // 'navigator.id.request();</script>'
-      );
-    });
-
 ## socket.io, including message-queue(non-threadable)
 
 
