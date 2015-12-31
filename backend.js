@@ -131,7 +131,7 @@ function loginHandler (provider) {
         if (app.indexOf('#') === -1) {
           app += '#';
         }
-        res.redirect(app + 'solsortLoginToken=' + token);
+        res.redirect(app + 'muBackendLoginToken=' + token);
       });
     });
   };
@@ -142,12 +142,14 @@ function login (access, refresh, profile, done) {
 }
 function addStrategy (name, Strategy, opt) {
   passport.use(new Strategy(config[name], login));
+  var callbackName = 'auth/' + name + '/callback'
+  config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
   app.get('/auth/' + name,
     function (req, res) {
       req.session.app = req.url.replace(/^[^?]*./, '');
       return passport.authenticate(name, opt)(req, res);
     });
-  app.get('/auth/' + name + '/callback', loginHandler(name));
+  app.get('/' + callbackName, loginHandler(name));
 }
 
 addStrategy('github', require('passport-github'));

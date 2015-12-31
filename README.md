@@ -10,39 +10,47 @@
 
 In-progress, - not done yet...
 
-Goal:
+Design goals:
 
-- Support noBackend applications
-  - persist/sync storage
-  - communicate between peers
-  - peer discovery
-- Should be decentralisable, - start out with traditional
-  client-server architecture, but keep in mind how it could
-  be completely decentralised/p2p later on.
+- *noBackend* - make client-side apps communcate and synchronise, without app-specific backend, this includes: 1) persist/sync'ed storage 2) communication between peers, 3) peer discovery
+- *decentralisable* - start out with traditional client-server architecture, but keep in mind how it could be completely decentralised/p2p later on.
+- *simplicity* - should be as simple/small as possible
 
-## API-thoughts
+## API
 
-### Client:
+API is under design, and not implemented yet:  
 
-- mu = new MuBackend(url)
-- mu.userIds
-- mu.login(provider) -> page-reload
-- mu.logout()
+### Initialisation
+
+- `mu = new MuBackend(url)`
+- `mu.userId` - a string that identifies the user, if currently logged in
+- `mu.userFullName` - the full name of the user, if available
+- `mu.login(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
+- `mu.logout()`
 
 #### Storage
 
-- mu.newPouchDB(userId, db) -> pouchdb, connected to remote db
+MuBackend allows creation of sync-endpoints for PouchDB. 
+
+- `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user.
+- `mu.newPouchDB(userId, dbName, PouchDB)` - returns a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 
 #### Messaging
 
-- mu.on(message-chan, f) - chan has the form `userId:...` or `*:...`. Only logged-in user can listen on userId.
-- mu.removeListener(message-chan, f)
-- mu.emit(message-chan, message) - emit to all listeners (on network if available)
-- mu.emitOnce(message-chan, message) - emit to one random listener (on network if available)
+Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
+
+- `mu.on(mu.userId + ":someChannel", f)` or `mu.on("*:someChannel", f)` - listen to events
+- `mu.on('connect', f)` and `mu.on('disconnect', f)` - get notified on connect/disconnect
+- `mu.removeListener(id, f)` stop listening
+- `mu.emit(message-chan, message)` - emit to all listeners if connected
+- `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 
 #### Directory
-- mu.findTagged(tag) -> promise of list of user-ids with given tag
-- mu.tagSelf(tag, true/false) -> register/deregister current user as having a tag
+
+A user can add tags to itself, which makes him/her discoverable for other users.
+
+- `mu.findTagged(tag)` -> promise of list of user-ids with given tag
+- `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
 
 ## Introduction
 ### The name
@@ -68,7 +76,8 @@ muBackend is just the empty space between the following technologies:
 - `intro.js` sample usage
 - `mu.js` the client side library
 - `backend.js the server side code
-- `dev.sh` shell script used during development
+- `dev.sh` shell script used during development, which autoruns/restarts the server and generates README.md
+- `config.sample.json` sample config file, the filename should be added as an argument when running `dev.sh` or `backend.js`
 
 ## Dev-dependencies
 
@@ -214,7 +223,7 @@ Routes:
             if (app.indexOf('#') === -1) {
               app += '#';
             }
-            res.redirect(app + 'solsortLoginToken=' + token);
+            res.redirect(app + 'muBackendLoginToken=' + token);
           });
         });
       };
@@ -225,12 +234,14 @@ Routes:
     }
     function addStrategy (name, Strategy, opt) {
       passport.use(new Strategy(config[name], login));
+      var callbackName = 'auth/' + name + '/callback'
+      config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
       app.get('/auth/' + name,
         function (req, res) {
           req.session.app = req.url.replace(/^[^?]*./, '');
           return passport.authenticate(name, opt)(req, res);
         });
-      app.get('/auth/' + name + '/callback', loginHandler(name));
+      app.get('/' + callbackName, loginHandler(name));
     }
 
     addStrategy('github', require('passport-github'));
