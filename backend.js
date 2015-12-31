@@ -13,15 +13,29 @@ var session = require('express-session');
 var crypto = require('crypto');
 var fs = require('fs');
 var passport = require("passport");
-var config = require("/solsort/config.json");
 var btoa = require("btoa");
 var request = require("request");
 
+// ## Load config
+//
+var configFile = process.argv[process.argv.length -1];
+if(".json" !== configFile.slice(-5) ) {
+  console.log("Error: backend needs .json config file as argument.");
+  process.exit(-1);
+}
+var config = require(configFile);
+console.log(config);
+
+// ### Default configuration
+//
+config.port = config.port || 4078;
+
+// ## start express server
 var app = express();
 app.use(session(config.expressSession));
 var server = require('http').Server(app);
 
-server.listen(4078);
+server.listen(config.port);
 
 // ## Util
 //
@@ -30,8 +44,9 @@ function uniqueId() { return btoa(crypto.randomBytes(12)); }
 
 // ## CouchDB
 //
-var couchUrl = "http://" + config.couchdb.user + ":" + 
-config.couchdb.password + "@localhost:5984/";
+var couchUrl = config.couchdb.url.replace("//", "//" + 
+    config.couchdb.user + ":" + config.couchdb.password);
+  
 function getUser(user, callback) {
   request.get(couchUrl + '_users/org.couchdb.user:' + user, 
       function(err, response, body) {
