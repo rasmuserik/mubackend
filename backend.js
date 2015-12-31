@@ -1,4 +1,4 @@
-// ## Server (backend.js)
+// # Server (backend.js)
 //
 // Routes:
 //
@@ -8,9 +8,6 @@
 // - /mu-demo.html /intro.js
 // - /mu.js
 // 
-// ## Load dependencies
-//
-
 // ## Load config
 //
 var configFile = process.argv[process.argv.length - 1];

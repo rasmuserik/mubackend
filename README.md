@@ -90,7 +90,7 @@ On ubuntu linux: `apt-get install inotify-tools couchdb npm`
     }
 # Client (mu.js)
 
-## Server (backend.js)
+# Server (backend.js)
 
 Routes:
 
@@ -99,9 +99,6 @@ Routes:
 - /socket.io/
 - /mu-demo.html /intro.js
 - /mu.js
-
-## Load dependencies
-
 
 ## Load config
 
