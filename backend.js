@@ -56,15 +56,15 @@ function createUser (user, fullname, password) {
     console.log('createUser:', user, body);
   });
 }
-function dbName (user, id, isPrivate) { // ###
+function dbName (user, id) { // ###
   user = user.replace(/_/g, '-');
-  var dbName = 'mu_' + user + (isPrivate ? '_600_' : '_644_') + encodeURIComponent(id);
+  var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
   dbName = dbName.toLowerCase();
   dbName = dbName.replace(/[^a-z_$()+-]/g, '$');
   return dbName;
 }
 function createDatabase (user, id, isPrivate, callback) { // ###
-  var name = dbName(user, id, isPrivate);
+  var name = dbName(user, id);
   request.put({
     url: couchUrl + name,
     json: {}
@@ -183,8 +183,8 @@ io.on('connection', function (socket) { // ###
     f(loginRequests[token]);
     delete loginRequests[token];
   });
-  socket.on('dbName', function (user, db, isPrivate, f) { // ####
-    f(dbName(user, db, isPrivate));
+  socket.on('dbName', function (user, db, f) { // ####
+    f(dbName(user, db));
   });
   socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
     request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
@@ -225,6 +225,7 @@ io.on('connection', function (socket) { // ###
     }
     delete connectionSubs[socket.id];
   });
+  setInterval(function() { socket.emit('connected');}, 1000); // ####
 }); // ####
 // ## CORS
 //
@@ -238,17 +239,17 @@ app.get('/cors/', function (req, res) {
 // ## Hosting of static resources
 //
 var fs = require('fs');
-app.get('/mu-demo.html', function (req, res) {
+app.get('/mu.demo.html', function (req, res) {
   res.end('<html><body>' +
-    '<script src=/mu.js></script>' +
-    '<script src=/intro.js></script>' +
+    '<script src=/mu.min.js></script>' +
+    '<script src=/mu.intro.js></script>' +
     '</body></html>');
 });
-var muJs = fs.readFileSync('mu.js');
-app.get('/mu.js', function (req, res) {
+var muJs = fs.readFileSync('mu.min.js');
+app.get('/mu.min.js', function (req, res) {
   res.end(muJs);
 });
 var introJs = fs.readFileSync('intro.js');
-app.get('/intro.js', function (req, res) {
+app.get('/mu.intro.js', function (req, res) {
   res.end(introJs);
 });

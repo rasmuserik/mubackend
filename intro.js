@@ -38,8 +38,8 @@
 //
 // MuBackend allows creation of sync-endpoints for PouchDB. 
 //
-// - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user.
-// - `mu.newPouchDB(userId, dbName, PouchDB)` - returns a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
+// - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
+// - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 //
 // #### Messaging
 //
@@ -91,6 +91,4 @@
 //
 // # intro.js (literate code)
 //
-if (!window.location.hash) {
-  window.location.href = 'https://api.solsort.com/auth/github?' + window.location.href
-}
+window.mu = new window.MuBackend('https://api.solsort.com/');
