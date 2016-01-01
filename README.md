@@ -1,5 +1,5 @@
 <!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->
-# muBackend
+# muBackend - in progress, not done yet
 
 [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
@@ -8,13 +8,20 @@
 [![npm](https://img.shields.io/npm/v/mubackend.svg)](https://www.npmjs.com/package/mubackend)
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
-In-progress, - not done yet...
+MuBackend is a noBackend backend, <br>
+primarily for single page applications. <br> 
+Intended features:
 
-Design goals:
+- *Authentication* of users through different providers
+- *Synchronization*  of user data across different clients/devices
+- *Communication* between users, both messaging and discovery
 
-- *noBackend* - make client-side apps communcate and synchronise, without app-specific backend, this includes: 1) persist/sync'ed storage 2) communication between peers, 3) peer discovery
-- *decentralisable* - start out with traditional client-server architecture, but keep in mind how it could be completely decentralised/p2p later on.
-- *simplicity* - should be as simple/small as possible
+The design criterias are: *simplicity* and *scaleability*. <br>
+This README.md, contains the *entire* source code, <br>
+both for the client and the server. <br>
+This implementation prioritises simplicity<br>
+over scaleability, but all of the API/algorithms<br>
+can be implemented with web-scale performance.
 
 ## API
 
