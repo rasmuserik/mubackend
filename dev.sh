@@ -1,3 +1,4 @@
+export NODE_TLS_REJECT_UNAUTHORIZED=0
 npm install --dev
 while inotifywait -q intro.js mu.js backend.js
 do 

@@ -27,6 +27,9 @@
     "secret": "...enter some random string here..."
   },
   "url": "https://.../",
+  "createUsers": {
+    "user1..": "password1.."
+  },
   "couchdb": {
     "url": "https://.../",
     "user": "...",

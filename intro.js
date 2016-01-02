@@ -22,7 +22,7 @@
 // over scaleability, but all of the API/algorithms<br>
 // can be implemented with web-scale performance.
 // 
-// ## API / Roadmap
+// ## API 
 //
 // API is under implemntation
 //
@@ -31,7 +31,6 @@
 // - `mu = new MuBackend(url)`
 // - `mu.userId` - a string that identifies the user, if currently logged in
 // - `mu.userFullName` - the full name of the user, if available
-// - `mu.signIn(userId, password) - login, returns promise
 // - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
 // - `mu.signOut()`
 //
@@ -52,16 +51,24 @@
 // - `mu.emit(message-chan, message)` - emit to all listeners if connected
 // - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 //
+// #### Events
+// 
+// - `connect` and `disconnect` when connected to mubackend.
+// - `signin`, `signout`, `unauthenticated`
+//
 // # Roadmap
+//
 // ## Changelog
 //
 // ## Backlog
-// ### Directory API
 //
-// A user can add tags to itself, which makes him/her discoverable for other users.
-//
+// - `mu.signIn(userId, password)` - login, returns promise
 // - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
 // - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
+// - Sample applications
+// - Guide to install/self-host
+// - Docker
+// - Announce
 //
 // ## Introduction
 // ### The name

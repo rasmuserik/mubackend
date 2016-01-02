@@ -23,7 +23,7 @@ This implementation prioritises simplicity<br>
 over scaleability, but all of the API/algorithms<br>
 can be implemented with web-scale performance.
 
-## API / Roadmap
+## API 
 
 API is under implemntation
 
@@ -32,7 +32,6 @@ API is under implemntation
 - `mu = new MuBackend(url)`
 - `mu.userId` - a string that identifies the user, if currently logged in
 - `mu.userFullName` - the full name of the user, if available
-- `mu.signIn(userId, password) - login, returns promise
 - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
 - `mu.signOut()`
 
@@ -53,16 +52,24 @@ Communications between peers happens through channels. The channel id consists o
 - `mu.emit(message-chan, message)` - emit to all listeners if connected
 - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 
+#### Events
+
+- `connect` and `disconnect` when connected to mubackend.
+- `signin`, `signout`, `unauthenticated`
+
 # Roadmap
+
 ## Changelog
 
 ## Backlog
-### Directory API
 
-A user can add tags to itself, which makes him/her discoverable for other users.
-
+- `mu.signIn(userId, password)` - login, returns promise
 - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
 - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
+- Sample applications
+- Guide to install/self-host
+- Docker
+- Announce
 
 ## Introduction
 ### The name
@@ -111,49 +118,75 @@ We load socket.io as a static dependency, such that we can load it when offline,
 
 Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
 /* var Promise = window.Promise || require('promise'); */
+
 ## Initialisation
 
     window.MuBackend = function MuBackend(url) {
       var self = this;
       var loginFn;
       url = url + (url[url.length -1] === '/' ? "" : "/");
-      self._url = url;
-      self._socket = io(url);
-      self._listeners = {};
-      self._socket.on('connect', function() { self.emit('connect'); });
-      self._socket.on('disconnect', function() { self.emit('disconnect'); });
-      self.userId = window.localStorage.getItem('mubackend' + url + 'userId');
-      self.userFullName = window.localStorage.getItem('mubackend' + url + 'userFullName');
-      self._password = window.localStorage.getItem('mubackend' + url + '_password');
+      this._url = url;
+      this._socket = (socket = io(url));
+      this._listeners = {};
+      this.userId = window.localStorage.getItem('mubackend' + url + 'userId');
+      this._token = window.localStorage.getItem('mubackend' + url + '_token');
+      socket.on('connect', function() { self.emit('connect'); });
+      socket.on('disconnect', function() { self.emit('disconnect'); });
       if(window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
-        loginFn = function loginFn() {
-          console.log("TODO: loginFn");
+        loginFn = function() {
+          var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
+          socket.emit('loginToken', token, function(result) {
+            result = result || {};
+            if(result.user && result.token) {
+              self._signIn(result.user, result.token);
+            } 
+          });
           window.setTimeout(function() { self.removeListener('connect', loginFn); }, 0);
         }
-        self.on('connect', loginFn);
+        this.on('connect', loginFn);
       }
       self.on('connect', function resubscribe() { self._resubscribe(); });
+    };
+    MuBackend.prototype._signIn = function(userId,_token) {
+      window.localStorage.setItem('mubackend' + this.url + 'userId', (this.userId = userId));
+      window.localStorage.setItem('mubackend' + this.url + '_token', (this._token = _token));
+      this.emit(userId ? 'signin' : 'signout');
+    }
+    MuBackend.prototype.signIn = function(userId, password) {
+      var self = this;
+      this._socket.emit('loginPassword', userId, password, function(err) {
+        if(!err) {
+          self._signIn(userId, password);
+        }
+      });
     };
     MuBackend.prototype.signInWith = function(provider) {
       window.location.href = this._url + 'auth/' + provider + '?' + window.location.href;
     };
     MuBackend.prototype.signOut = function () {
-      this.userId = this.userFullName = this._password = undefined;
-      window.localStorage.setItem('mubackend' + this.url + 'userId', undefined);
-      window.localStorage.setItem('mubackend' + this.url + 'userFullName', undefined);
-      window.localStorage.setItem('mubackend' + this.url + '_password', undefined);
+      this._signIn(undefined, undefined, undefined);
     };
 ## Storage
 
-    MuBackend.prototype.createDB = function(dbName, public)  {
-      var p = new Promise();
-      console.log("TODO: createDB");
-      return p;
+    MuBackend.prototype.createDB = function(dbName, isPublic)  {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+      self._socket.emit('createDatabase', 
+          self.userId, dbName, !isPublic, self._token, function(err) {
+            if(err) { reject(err); } else { resolve(); }});
+      });
     };
     MuBackend.prototype.newPouchDB = function(userId, dbName, PouchDB)  {
-      var p = new Promise();
-      console.log("TODO: newPouchDB");
-      return p;
+      self = this;
+      return new Promise(function(resolve, reject) {
+        self._socket.emit('databaseUrl', userId, dbName, function(url) {
+          if(self.userId) {
+            url = url.replace('//', '//' +  self.userId + ':' + self._token + '@');
+          }
+          PouchDB = PouchDB || window.PouchDB;
+          resolve(new PouchDB(url));
+        });
+      });
     };
 ## Messaging
 
@@ -191,17 +224,18 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
         }
       }
     };
-    MuBackend.prototype.emit = function(chanId, message)  {
+    MuBackend.prototype.emit = function(chanId)  {
+      var params = Array.prototype.slice.call(arguments, 1);
       if(chanId.indexOf(':') !== -1) {
         console.log("TODO: socket emit");
       }
-      var self = this;
-      this._getChan(chanId).forEach( function(f) { f(message); });
+      this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
     };
     MuBackend.prototype.emitOnce = function(chanId, message)  {
+      var params = Array.prototype.slice.call(arguments, 1);
       var arr = this._getChan(chanId);
       if(arr.length) {
-        arr[Math.random() * arr.length | 0](message);
+        arr[Math.random() * arr.length | 0].apply(null, params);  
       } else if(chanId.indexOf(':') !== -1) {
         console.log("TODO: socket emitOnce");
       }
@@ -252,7 +286,7 @@ Routes:
 
     var request = require('request');
     var couchUrl = config.couchdb.url.replace('//', '//' +
-      config.couchdb.user + ':' + config.couchdb.password);
+      config.couchdb.user + ':' + config.couchdb.password + '@');
     function getUser (user, callback) {
       request.get(couchUrl + '_users/org.couchdb.user:' + user,
         function (err, response, body) {
@@ -270,15 +304,20 @@ Routes:
           roles: [],
           type: 'user'
         }
-      }, function (_, __, body) {
-        console.log('createUser:', user, body);
+      }, function (err, __, body) {
+        console.log('createUser:', user);
       });
     }
+    (function() {
+      for(var user in config.createUsers) {
+        createUser(user, user, config.createUsers[user]);
+      }
+    })();
     function dbName (user, id) { // ###
       user = user.replace(/_/g, '-');
       var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
       dbName = dbName.toLowerCase();
-      dbName = dbName.replace(/[^a-z_$()+-]/g, '$');
+      dbName = dbName.replace(/[^a-z0-9_$()+-]/g, '$');
       return dbName;
     }
     function createDatabase (user, id, isPrivate, callback) { // ###
@@ -301,7 +340,7 @@ Routes:
           url: couchUrl + name + '/_design/readonly',
           json: {
             validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
-                                     name + '")throw "Forbidden";}'
+                                     user + '")throw "Forbidden";}'
           }
         }, function (err, _, body) {
           if (err || body.error) console.log('createDatabaseDesignError:', name, body);
@@ -335,7 +374,7 @@ Routes:
 
             var token = uniqueId();
             var app = req.session.app;
-            loginRequests[token] = {user: user, password: pw, time: Date.now()};
+            loginRequests[token] = {user: user, token: pw, time: Date.now()};
             if (app.indexOf('#') === -1) {
               app += '#';
             }
@@ -373,6 +412,18 @@ Routes:
     var io = require('socket.io')(server);
     var p2pserver = require('socket.io-p2p-server').Server;
     io.use(p2pserver);
+    function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
+    function validateUser(user, password, callback) {
+        request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
+          var body = jsonOrEmpty(body);
+          console.log('validateUser', user, password, body.plain_pw);
+          if (err || password !== body.plain_pw) {
+            callback("Login error");
+          } else {
+            callback();
+          }
+        });
+    }
 
 ### message queue
 
@@ -397,22 +448,24 @@ Routes:
     }
 
     io.on('connection', function (socket) { // ###
-      socket.on('login', function (token, f) { // ####
+      socket.on('loginToken', function (token, f) { // ####
         f(loginRequests[token]);
         delete loginRequests[token];
       });
+      socket.on('loginPassword', validateUser); // ####
       socket.on('dbName', function (user, db, f) { // ####
         f(dbName(user, db));
       });
       socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
-        request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-          if (err || password !== body.password) {
-            f('Login error');
+        validateUser(user, password, function(err) {
+          if(err) {
+            f(err);
           } else {
             createDatabase(user, db, isPrivate, f);
           }
         });
       });
+      socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
       socket.on('subscribe', function (user, password) { // ####
         request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
           if (!err && password === body.password) {
@@ -473,3 +526,4 @@ Routes:
     app.get('/mu.intro.js', function (req, res) {
       res.end(introJs);
     });
+

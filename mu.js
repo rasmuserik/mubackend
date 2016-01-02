@@ -11,49 +11,75 @@ var io = window.io;
 //
 // Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
 /* var Promise = window.Promise || require('promise'); */
+
 // ## Initialisation
 //
 window.MuBackend = function MuBackend(url) {
   var self = this;
   var loginFn;
   url = url + (url[url.length -1] === '/' ? "" : "/");
-  self._url = url;
-  self._socket = io(url);
-  self._listeners = {};
-  self._socket.on('connect', function() { self.emit('connect'); });
-  self._socket.on('disconnect', function() { self.emit('disconnect'); });
-  self.userId = window.localStorage.getItem('mubackend' + url + 'userId');
-  self.userFullName = window.localStorage.getItem('mubackend' + url + 'userFullName');
-  self._password = window.localStorage.getItem('mubackend' + url + '_password');
+  this._url = url;
+  this._socket = (socket = io(url));
+  this._listeners = {};
+  this.userId = window.localStorage.getItem('mubackend' + url + 'userId');
+  this._token = window.localStorage.getItem('mubackend' + url + '_token');
+  socket.on('connect', function() { self.emit('connect'); });
+  socket.on('disconnect', function() { self.emit('disconnect'); });
   if(window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
-    loginFn = function loginFn() {
-      console.log("TODO: loginFn");
+    loginFn = function() {
+      var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
+      socket.emit('loginToken', token, function(result) {
+        result = result || {};
+        if(result.user && result.token) {
+          self._signIn(result.user, result.token);
+        } 
+      });
       window.setTimeout(function() { self.removeListener('connect', loginFn); }, 0);
     }
-    self.on('connect', loginFn);
+    this.on('connect', loginFn);
   }
   self.on('connect', function resubscribe() { self._resubscribe(); });
+};
+MuBackend.prototype._signIn = function(userId,_token) {
+  window.localStorage.setItem('mubackend' + this.url + 'userId', (this.userId = userId));
+  window.localStorage.setItem('mubackend' + this.url + '_token', (this._token = _token));
+  this.emit(userId ? 'signin' : 'signout');
+}
+MuBackend.prototype.signIn = function(userId, password) {
+  var self = this;
+  this._socket.emit('loginPassword', userId, password, function(err) {
+    if(!err) {
+      self._signIn(userId, password);
+    }
+  });
 };
 MuBackend.prototype.signInWith = function(provider) {
   window.location.href = this._url + 'auth/' + provider + '?' + window.location.href;
 };
 MuBackend.prototype.signOut = function () {
-  this.userId = this.userFullName = this._password = undefined;
-  window.localStorage.setItem('mubackend' + this.url + 'userId', undefined);
-  window.localStorage.setItem('mubackend' + this.url + 'userFullName', undefined);
-  window.localStorage.setItem('mubackend' + this.url + '_password', undefined);
+  this._signIn(undefined, undefined, undefined);
 };
 // ## Storage
 //
-MuBackend.prototype.createDB = function(dbName, public)  {
-  var p = new Promise();
-  console.log("TODO: createDB");
-  return p;
+MuBackend.prototype.createDB = function(dbName, isPublic)  {
+  var self = this;
+  return new Promise(function(resolve, reject) {
+  self._socket.emit('createDatabase', 
+      self.userId, dbName, !isPublic, self._token, function(err) {
+        if(err) { reject(err); } else { resolve(); }});
+  });
 };
 MuBackend.prototype.newPouchDB = function(userId, dbName, PouchDB)  {
-  var p = new Promise();
-  console.log("TODO: newPouchDB");
-  return p;
+  self = this;
+  return new Promise(function(resolve, reject) {
+    self._socket.emit('databaseUrl', userId, dbName, function(url) {
+      if(self.userId) {
+        url = url.replace('//', '//' +  self.userId + ':' + self._token + '@');
+      }
+      PouchDB = PouchDB || window.PouchDB;
+      resolve(new PouchDB(url));
+    });
+  });
 };
 // ## Messaging
 //
@@ -91,17 +117,18 @@ MuBackend.prototype.removeListener = function(chanId, f)  {
     }
   }
 };
-MuBackend.prototype.emit = function(chanId, message)  {
+MuBackend.prototype.emit = function(chanId)  {
+  var params = Array.prototype.slice.call(arguments, 1);
   if(chanId.indexOf(':') !== -1) {
     console.log("TODO: socket emit");
   }
-  var self = this;
-  this._getChan(chanId).forEach( function(f) { f(message); });
+  this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
 };
 MuBackend.prototype.emitOnce = function(chanId, message)  {
+  var params = Array.prototype.slice.call(arguments, 1);
   var arr = this._getChan(chanId);
   if(arr.length) {
-    arr[Math.random() * arr.length | 0](message);
+    arr[Math.random() * arr.length | 0].apply(null, params);  
   } else if(chanId.indexOf(':') !== -1) {
     console.log("TODO: socket emitOnce");
   }

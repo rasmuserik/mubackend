@@ -34,7 +34,7 @@ function uniqueId () { return btoa(crypto.randomBytes(12)); }
 //
 var request = require('request');
 var couchUrl = config.couchdb.url.replace('//', '//' +
-  config.couchdb.user + ':' + config.couchdb.password);
+  config.couchdb.user + ':' + config.couchdb.password + '@');
 function getUser (user, callback) {
   request.get(couchUrl + '_users/org.couchdb.user:' + user,
     function (err, response, body) {
@@ -52,15 +52,20 @@ function createUser (user, fullname, password) {
       roles: [],
       type: 'user'
     }
-  }, function (_, __, body) {
-    console.log('createUser:', user, body);
+  }, function (err, __, body) {
+    console.log('createUser:', user);
   });
 }
+(function() {
+  for(var user in config.createUsers) {
+    createUser(user, user, config.createUsers[user]);
+  }
+})();
 function dbName (user, id) { // ###
   user = user.replace(/_/g, '-');
   var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
   dbName = dbName.toLowerCase();
-  dbName = dbName.replace(/[^a-z_$()+-]/g, '$');
+  dbName = dbName.replace(/[^a-z0-9_$()+-]/g, '$');
   return dbName;
 }
 function createDatabase (user, id, isPrivate, callback) { // ###
@@ -83,7 +88,7 @@ function createDatabase (user, id, isPrivate, callback) { // ###
       url: couchUrl + name + '/_design/readonly',
       json: {
         validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
-                                 name + '")throw "Forbidden";}'
+                                 user + '")throw "Forbidden";}'
       }
     }, function (err, _, body) {
       if (err || body.error) console.log('createDatabaseDesignError:', name, body);
@@ -117,7 +122,7 @@ function loginHandler (provider) {
 
         var token = uniqueId();
         var app = req.session.app;
-        loginRequests[token] = {user: user, password: pw, time: Date.now()};
+        loginRequests[token] = {user: user, token: pw, time: Date.now()};
         if (app.indexOf('#') === -1) {
           app += '#';
         }
@@ -155,6 +160,18 @@ addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'}
 var io = require('socket.io')(server);
 var p2pserver = require('socket.io-p2p-server').Server;
 io.use(p2pserver);
+function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
+function validateUser(user, password, callback) {
+    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
+      var body = jsonOrEmpty(body);
+      console.log('validateUser', user, password, body.plain_pw);
+      if (err || password !== body.plain_pw) {
+        callback("Login error");
+      } else {
+        callback();
+      }
+    });
+}
 
 // ### message queue
 //
@@ -179,22 +196,24 @@ function unsubscribe (socket, user) {
 }
 
 io.on('connection', function (socket) { // ###
-  socket.on('login', function (token, f) { // ####
+  socket.on('loginToken', function (token, f) { // ####
     f(loginRequests[token]);
     delete loginRequests[token];
   });
+  socket.on('loginPassword', validateUser); // ####
   socket.on('dbName', function (user, db, f) { // ####
     f(dbName(user, db));
   });
   socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
-    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-      if (err || password !== body.password) {
-        f('Login error');
+    validateUser(user, password, function(err) {
+      if(err) {
+        f(err);
       } else {
         createDatabase(user, db, isPrivate, f);
       }
     });
   });
+  socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
   socket.on('subscribe', function (user, password) { // ####
     request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
       if (!err && password === body.password) {
@@ -255,3 +274,4 @@ var introJs = fs.readFileSync('intro.js');
 app.get('/mu.intro.js', function (req, res) {
   res.end(introJs);
 });
+
