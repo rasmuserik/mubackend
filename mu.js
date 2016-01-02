@@ -2,10 +2,15 @@
 //
 // We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 //
-var io = require('socket.io-client');
+
+/* 
+var io = require('socket.io-client'); 
+*/ 
+var io = window.io;
+
 //
 // Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
-var Promise = window.Promise || require('promise');
+/* var Promise = window.Promise || require('promise'); */
 // ## Initialisation
 //
 window.MuBackend = function MuBackend(url) {
@@ -13,8 +18,7 @@ window.MuBackend = function MuBackend(url) {
   var loginFn;
   url = url + (url[url.length -1] === '/' ? "" : "/");
   self._url = url;
-  //self._socket = require('socket.io-client')(url + '/socket.io');
-  self._socket = require('socket.io-client')(url);
+  self._socket = io(url);
   self._listeners = {};
   self._socket.on('connect', function() { self.emit('connect'); });
   self._socket.on('disconnect', function() { self.emit('disconnect'); });
@@ -30,10 +34,10 @@ window.MuBackend = function MuBackend(url) {
   }
   self.on('connect', function resubscribe() { self._resubscribe(); });
 };
-MuBackend.prototype.login = function(provider) {
+MuBackend.prototype.signInWith = function(provider) {
   window.location.href = this._url + 'auth/' + provider + '?' + window.location.href;
 };
-MuBackend.prototype.logout = function () {
+MuBackend.prototype.signOut = function () {
   this.userId = this.userFullName = this._password = undefined;
   window.localStorage.setItem('mubackend' + this.url + 'userId', undefined);
   window.localStorage.setItem('mubackend' + this.url + 'userFullName', undefined);
@@ -103,7 +107,7 @@ MuBackend.prototype.emitOnce = function(chanId, message)  {
   }
 };
 // ## Directory
-//
+// 
 MuBackend.prototype.findTagged = function(tag) {
   var p = new Promise();
   console.log("TODO: findTagged");

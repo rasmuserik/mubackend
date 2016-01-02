@@ -22,17 +22,18 @@
 // over scaleability, but all of the API/algorithms<br>
 // can be implemented with web-scale performance.
 // 
-// ## API
+// ## API / Roadmap
 //
-// API is under design, and not implemented yet:  
+// API is under implemntation
 //
 // ### Initialisation
 //
 // - `mu = new MuBackend(url)`
 // - `mu.userId` - a string that identifies the user, if currently logged in
 // - `mu.userFullName` - the full name of the user, if available
-// - `mu.login(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
-// - `mu.logout()`
+// - `mu.signIn(userId, password) - login, returns promise
+// - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
+// - `mu.signOut()`
 //
 // #### Storage
 //
@@ -51,7 +52,11 @@
 // - `mu.emit(message-chan, message)` - emit to all listeners if connected
 // - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 //
-// #### Directory
+// # Roadmap
+// ## Changelog
+//
+// ## Backlog
+// ### Directory API
 //
 // A user can add tags to itself, which makes him/her discoverable for other users.
 //

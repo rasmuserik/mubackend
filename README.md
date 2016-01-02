@@ -23,17 +23,18 @@ This implementation prioritises simplicity<br>
 over scaleability, but all of the API/algorithms<br>
 can be implemented with web-scale performance.
 
-## API
+## API / Roadmap
 
-API is under design, and not implemented yet:  
+API is under implemntation
 
 ### Initialisation
 
 - `mu = new MuBackend(url)`
 - `mu.userId` - a string that identifies the user, if currently logged in
 - `mu.userFullName` - the full name of the user, if available
-- `mu.login(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
-- `mu.logout()`
+- `mu.signIn(userId, password) - login, returns promise
+- `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
+- `mu.signOut()`
 
 #### Storage
 
@@ -52,7 +53,11 @@ Communications between peers happens through channels. The channel id consists o
 - `mu.emit(message-chan, message)` - emit to all listeners if connected
 - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 
-#### Directory
+# Roadmap
+## Changelog
+
+## Backlog
+### Directory API
 
 A user can add tags to itself, which makes him/her discoverable for other users.
 
@@ -97,10 +102,15 @@ On ubuntu linux: `apt-get install inotify-tools couchdb npm`
 
 We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 
-    var io = require('socket.io-client');
+
+/* 
+    var io = require('socket.io-client'); 
+    */ 
+    var io = window.io;
+
 
 Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
-    var Promise = window.Promise || require('promise');
+/* var Promise = window.Promise || require('promise'); */
 ## Initialisation
 
     window.MuBackend = function MuBackend(url) {
@@ -108,8 +118,7 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
       var loginFn;
       url = url + (url[url.length -1] === '/' ? "" : "/");
       self._url = url;
-      //self._socket = require('socket.io-client')(url + '/socket.io');
-      self._socket = require('socket.io-client')(url);
+      self._socket = io(url);
       self._listeners = {};
       self._socket.on('connect', function() { self.emit('connect'); });
       self._socket.on('disconnect', function() { self.emit('disconnect'); });
@@ -125,10 +134,10 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
       }
       self.on('connect', function resubscribe() { self._resubscribe(); });
     };
-    MuBackend.prototype.login = function(provider) {
+    MuBackend.prototype.signInWith = function(provider) {
       window.location.href = this._url + 'auth/' + provider + '?' + window.location.href;
     };
-    MuBackend.prototype.logout = function () {
+    MuBackend.prototype.signOut = function () {
       this.userId = this.userFullName = this._password = undefined;
       window.localStorage.setItem('mubackend' + this.url + 'userId', undefined);
       window.localStorage.setItem('mubackend' + this.url + 'userFullName', undefined);
@@ -450,6 +459,8 @@ Routes:
     var fs = require('fs');
     app.get('/mu.demo.html', function (req, res) {
       res.end('<html><body>' +
+        '<script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>' +
+        '<script src=/socket.io/socket.io.js></script>' +
         '<script src=/mu.min.js></script>' +
         '<script src=/mu.intro.js></script>' +
         '</body></html>');

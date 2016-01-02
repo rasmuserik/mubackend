@@ -241,6 +241,8 @@ app.get('/cors/', function (req, res) {
 var fs = require('fs');
 app.get('/mu.demo.html', function (req, res) {
   res.end('<html><body>' +
+    '<script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>' +
+    '<script src=/socket.io/socket.io.js></script>' +
     '<script src=/mu.min.js></script>' +
     '<script src=/mu.intro.js></script>' +
     '</body></html>');
