@@ -32,7 +32,6 @@ API is under implemntation
 - `mu = new MuBackend(url)`
 - `mu.userId` - a string that identifies the user, if currently logged in
 - `mu.signIn(userId, password)` - login with username/password
-- `mu.userFullName` - the full name of the user, if available
 - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
 - `mu.signOut()`
 
@@ -295,19 +294,18 @@ Routes:
           callback(err ? {error: 'request error'} : JSON.parse(body));
         });
     }
-    function createUser (user, fullname, password) { // ###
+    function createUser (user, password, meta) { // ###
       request.put({
         url: couchUrl + '_users/org.couchdb.user:' + user,
         json: {
           name: user,
-          fullname: fullname,
+          meta: meta,
           password: password,
           plain_pw: password,
           roles: [],
           type: 'user'
         }
       }, function (err, __, body) {
-        console.log('createUser:', user, password);
       });
     }
     function dbName (user, id) { // ###
@@ -360,8 +358,6 @@ Routes:
         passport.authenticate(provider)(req, res, function (profile) {
           if (profile.provider === 'Wordpress') profile.id = profile._json.ID;
           var user = encodeURIComponent(profile.provider + '_' + profile.id);
-          console.log('LOGIN', user, JSON.stringify(profile._raw));
-
           if (!profile.id) {
             return res.redirect(app);
           }
@@ -371,7 +367,8 @@ Routes:
               pw = o.plain_pw;
             } else {
               pw = uniqueId();
-              createUser(user, profile.displayName || profile.name, pw);
+              profile._json.loginProvider = provider;
+              createUser(user, pw, profile._json);
             }
 
             var token = uniqueId();
@@ -503,5 +500,5 @@ Routes:
     });
 ## create users from configfile
     (function() {
-    for(var user in config.createUsers) { createUser(user, user, config.createUsers[user]); }
+    for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
     })();

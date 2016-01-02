@@ -42,19 +42,18 @@ function getUser (user, callback) {
       callback(err ? {error: 'request error'} : JSON.parse(body));
     });
 }
-function createUser (user, fullname, password) { // ###
+function createUser (user, password, meta) { // ###
   request.put({
     url: couchUrl + '_users/org.couchdb.user:' + user,
     json: {
       name: user,
-      fullname: fullname,
+      meta: meta,
       password: password,
       plain_pw: password,
       roles: [],
       type: 'user'
     }
   }, function (err, __, body) {
-    console.log('createUser:', user, password);
   });
 }
 function dbName (user, id) { // ###
@@ -107,8 +106,6 @@ function loginHandler (provider) {
     passport.authenticate(provider)(req, res, function (profile) {
       if (profile.provider === 'Wordpress') profile.id = profile._json.ID;
       var user = encodeURIComponent(profile.provider + '_' + profile.id);
-      console.log('LOGIN', user, JSON.stringify(profile._raw));
-
       if (!profile.id) {
         return res.redirect(app);
       }
@@ -118,7 +115,8 @@ function loginHandler (provider) {
           pw = o.plain_pw;
         } else {
           pw = uniqueId();
-          createUser(user, profile.displayName || profile.name, pw);
+          profile._json.loginProvider = provider;
+          createUser(user, pw, profile._json);
         }
 
         var token = uniqueId();
@@ -250,5 +248,5 @@ app.get('/mu.intro.js', function (req, res) {
 });
 // ## create users from configfile
 (function() {
-for(var user in config.createUsers) { createUser(user, user, config.createUsers[user]); }
+for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
 })();
