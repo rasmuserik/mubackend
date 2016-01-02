@@ -25,6 +25,7 @@ window.MuBackend = function MuBackend(url) {
   this._token = window.localStorage.getItem('mubackend' + url + '_token');
   socket.on('connect', function() { self.emit('connect'); });
   socket.on('disconnect', function() { self.emit('disconnect'); });
+  socket.on('message', function(chanId, msg) { self._emit(chanId, msg); });
   if(window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
     loginFn = function() {
       var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
@@ -87,12 +88,13 @@ MuBackend.prototype._getChan = function(chanId) {
   return this._listeners[chanId] || (this._listeners[chanId] = []);
 }
 MuBackend.prototype._subscribe = function(chanId) {
-  console.log("TODO: subscribe ", chanId);
+  this._socket.emit('sub', chanId, this._token);
 }
 MuBackend.prototype._resubscribe = function() {
+  var self = this;
   Object.keys(this._listeners).forEach(function(chanId) {
-    if(chanId.indexOf(':') !== -1 && this._listeners[chanId].length) {
-      this._subscribe(chanId);
+    if(chanId.indexOf(':') !== -1 && self._listeners[chanId].length) {
+      self._subscribe(chanId);
     }
   });
 }
@@ -108,37 +110,34 @@ MuBackend.prototype.on = function(chanId, f)  {
 MuBackend.prototype.removeListener = function(chanId, f)  {
   var arr = this._getChan(chanId);
   var pos = arr.indexOf(f) ;
-
   if(pos !== -1) {
     arr[pos] = arr[arr.length -1];
     arr.pop();
     if(!arr.length && chanId.indexOf(':') !== -1) {
-      console.log("TODO: socket-subscribe chan");
+      this._socket.emit('unsub', chanId);
     }
   }
+};
+MuBackend.prototype._emit = function(chanId, params)  {
+  this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
 };
 MuBackend.prototype.emit = function(chanId)  {
   var params = Array.prototype.slice.call(arguments, 1);
   if(chanId.indexOf(':') !== -1) {
-    console.log("TODO: socket emit");
+    this._socket.emit('pub', chanId, params);
+  } else {
+    this._emit(chanId, params);
   }
-  this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
 };
 MuBackend.prototype.emitOnce = function(chanId, message)  {
   var params = Array.prototype.slice.call(arguments, 1);
-  var arr = this._getChan(chanId);
-  if(arr.length) {
-    arr[Math.random() * arr.length | 0].apply(null, params);  
-  } else if(chanId.indexOf(':') !== -1) {
-    console.log("TODO: socket emitOnce");
-  }
+  this._socket.emit('pubOnce', chanId, params);
 };
 // ## Directory
 // 
 MuBackend.prototype.findTagged = function(tag) {
-  var p = new Promise();
   console.log("TODO: findTagged");
-  return p;
+  return new Promise();
 }
 MuBackend.prototype.tagSelf = function(tag, t) {
   console.log("TODO: tagSelf");

@@ -30,6 +30,7 @@ server.listen(config.port);
 var crypto = require('crypto');
 var btoa = require('btoa');
 function uniqueId () { return btoa(crypto.randomBytes(12)); }
+function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
 // ## CouchDB
 //
 var request = require('request');
@@ -41,7 +42,7 @@ function getUser (user, callback) {
       callback(err ? {error: 'request error'} : JSON.parse(body));
     });
 }
-function createUser (user, fullname, password) {
+function createUser (user, fullname, password) { // ###
   request.put({
     url: couchUrl + '_users/org.couchdb.user:' + user,
     json: {
@@ -53,14 +54,9 @@ function createUser (user, fullname, password) {
       type: 'user'
     }
   }, function (err, __, body) {
-    console.log('createUser:', user);
+    console.log('createUser:', user, password);
   });
 }
-(function() {
-  for(var user in config.createUsers) {
-    createUser(user, user, config.createUsers[user]);
-  }
-})();
 function dbName (user, id) { // ###
   user = user.replace(/_/g, '-');
   var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
@@ -95,7 +91,12 @@ function createDatabase (user, id, isPrivate, callback) { // ###
     });
   });
 }
-
+function validateUser(user, password, callback) { // ###
+    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
+      var body = jsonOrEmpty(body);
+      if (err || password !== body.plain_pw) { callback("Login error"); } else { callback(); }
+    });
+}
 // ## Login
 //
 var passport = require('passport');
@@ -156,95 +157,68 @@ addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'}
 
 // ## socket.io, including message-queue(non-threadable)
 //
-
 var io = require('socket.io')(server);
-var p2pserver = require('socket.io-p2p-server').Server;
-io.use(p2pserver);
-function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
-function validateUser(user, password, callback) {
-    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-      var body = jsonOrEmpty(body);
-      console.log('validateUser', user, password, body.plain_pw);
-      if (err || password !== body.plain_pw) {
-        callback("Login error");
-      } else {
-        callback();
-      }
-    });
-}
-
 // ### message queue
 //
-var connectionSubs = {};
-var subscribers = {};
-var messages = {};
-function getList (o, name) {
-  var result = o[name];
-  if (!result) {
-    result = [];
-    o[name] = result;
-  }
-  return result;
-}
-function unsubscribe (socket, user) {
-  var subs = getList(subscribers, user);
-  var pos = subs.indexOf(socket);
-  if (pos !== -1) {
-    subs[pos] = subs[subs.length - 1];
-    subs.pop();
-  }
-}
-
+var chans = {};
+function getChan(id) { return chans[id] || (chans[id] = []); }
 io.on('connection', function (socket) { // ###
+  var subscribedTo = {};
   socket.on('loginToken', function (token, f) { // ####
     f(loginRequests[token]);
     delete loginRequests[token];
   });
   socket.on('loginPassword', validateUser); // ####
-  socket.on('dbName', function (user, db, f) { // ####
-    f(dbName(user, db));
-  });
+  socket.on('dbName', function (user, db, f) { f(dbName(user, db)); }); // ####
   socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
     validateUser(user, password, function(err) {
-      if(err) {
-        f(err);
-      } else {
-        createDatabase(user, db, isPrivate, f);
-      }
+      if(err) { f(err); } else { createDatabase(user, db, isPrivate, f); }
     });
   });
   socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
-  socket.on('subscribe', function (user, password) { // ####
-    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-      if (!err && password === body.password) {
-        getList(connectionSubs, socket.id).push(user);
-        getList(subscribers, user).push(socket);
-        var msgs = getList(messages, user);
-        while (msgs.length) {
-          socket.emit('message', user, msgs.pop());
-        }
+  socket.on('sub', function (chan, password) { // ####
+    var splitPos = chan.indexOf(":");
+    if(splitPos !== -1) {
+    var user = chan.slice(0, splitPos);
+      if(user === '*') {
+        getChan(chan).push(socket);
+      } else {
+        validateUser(user, password, function(err) {
+          if(!err)  {
+            getChan(chan).push(socket);
+          }
+        });
       }
-    });
+    }
   });
-  socket.on('unsubscribe', function (user) { // ####
-    unsubscribe(socket, user);
+  socket.on('unsub', unsub); // ####
+  function unsub(chan) {
+    var chan = getChan(chan);
+    var pos = chan.indexOf(socket);
+    if(pos !== -1) {
+      chan[pos] = chan[chan.length - 1];
+      chan.pop();
+    }
+  }
+  socket.on('pub', function (chanId, msg) { // ####
+    var chan = getChan(chanId);
+    for(var i = 0; i < chan.length; ++i) {
+      chan[i].emit('message', chanId, msg);
+    }
   });
-  socket.on('message', function (user, msg) { // ####
-    var listeners = getList(subscribers, user);
-    if (listeners.length) {
-      listeners[listeners.length * Math.random() | 0].emit('message', msg);
-    } else {
-      getList(messages, user).push(msg);
+  socket.on('pubOnce', function (chanId, msg) { // ####
+    var chan = getChan(chanId);
+    if(chan.length) {
+      chan[chan.length * Math.random() | 0].emit('message', chanId, msg);
     }
   });
   socket.on('disconnect', function () { // ####
-    var subs = getList(connectionSubs, socket.id);
-    while (subs.length) {
-      unsubscribe(socket, subs.pop());
+    for(var chan in subscribedTo) {
+      unsubscribe(chan);
     }
-    delete connectionSubs[socket.id];
   });
-  setInterval(function() { socket.emit('connected');}, 1000); // ####
+  // ####
+  setInterval(function() {socket.emit('message', "blah", "foo");}, 10000);
 }); // ####
 // ## CORS
 //
@@ -274,4 +248,7 @@ var introJs = fs.readFileSync('intro.js');
 app.get('/mu.intro.js', function (req, res) {
   res.end(introJs);
 });
-
+// ## create users from configfile
+(function() {
+for(var user in config.createUsers) { createUser(user, user, config.createUsers[user]); }
+})();

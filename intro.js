@@ -22,26 +22,27 @@
 // over scaleability, but all of the API/algorithms<br>
 // can be implemented with web-scale performance.
 // 
-// ## API 
+// # API 
 //
 // API is under implemntation
 //
-// ### Initialisation
+// ## Initialisation
 //
 // - `mu = new MuBackend(url)`
 // - `mu.userId` - a string that identifies the user, if currently logged in
+// - `mu.signIn(userId, password)` - login with username/password
 // - `mu.userFullName` - the full name of the user, if available
 // - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
 // - `mu.signOut()`
 //
-// #### Storage
+// ## Storage
 //
 // MuBackend allows creation of sync-endpoints for PouchDB. 
 //
 // - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
 // - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 //
-// #### Messaging
+// ## Messaging
 //
 // Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
 //
@@ -51,10 +52,10 @@
 // - `mu.emit(message-chan, message)` - emit to all listeners if connected
 // - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 //
-// #### Events
+// ## Events
 // 
 // - `connect` and `disconnect` when connected to mubackend.
-// - `signin`, `signout`, `unauthenticated`
+// - `signin`, `signout`
 //
 // # Roadmap
 //
@@ -62,7 +63,8 @@
 //
 // ## Backlog
 //
-// - `mu.signIn(userId, password)` - login, returns promise
+// - automated test
+// - example page for experimentation
 // - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
 // - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
 // - Sample applications

@@ -23,26 +23,27 @@ This implementation prioritises simplicity<br>
 over scaleability, but all of the API/algorithms<br>
 can be implemented with web-scale performance.
 
-## API 
+# API 
 
 API is under implemntation
 
-### Initialisation
+## Initialisation
 
 - `mu = new MuBackend(url)`
 - `mu.userId` - a string that identifies the user, if currently logged in
+- `mu.signIn(userId, password)` - login with username/password
 - `mu.userFullName` - the full name of the user, if available
 - `mu.signInWith(provider)` - login with a given provider, providers can be: "github", "twitter", "linkedin", "google", "facebook", or "wordpress". Typically called when the user clicks on a log-in button. *The user leaves the page and will be redirected home to `location.href` when done*
 - `mu.signOut()`
 
-#### Storage
+## Storage
 
 MuBackend allows creation of sync-endpoints for PouchDB. 
 
 - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
 - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 
-#### Messaging
+## Messaging
 
 Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
 
@@ -52,10 +53,10 @@ Communications between peers happens through channels. The channel id consists o
 - `mu.emit(message-chan, message)` - emit to all listeners if connected
 - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
 
-#### Events
+## Events
 
 - `connect` and `disconnect` when connected to mubackend.
-- `signin`, `signout`, `unauthenticated`
+- `signin`, `signout`
 
 # Roadmap
 
@@ -63,7 +64,8 @@ Communications between peers happens through channels. The channel id consists o
 
 ## Backlog
 
-- `mu.signIn(userId, password)` - login, returns promise
+- automated test
+- example page for experimentation
 - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
 - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
 - Sample applications
@@ -132,6 +134,7 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
       this._token = window.localStorage.getItem('mubackend' + url + '_token');
       socket.on('connect', function() { self.emit('connect'); });
       socket.on('disconnect', function() { self.emit('disconnect'); });
+      socket.on('message', function(chanId, msg) { self._emit(chanId, msg); });
       if(window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
         loginFn = function() {
           var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
@@ -194,12 +197,13 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
       return this._listeners[chanId] || (this._listeners[chanId] = []);
     }
     MuBackend.prototype._subscribe = function(chanId) {
-      console.log("TODO: subscribe ", chanId);
+      this._socket.emit('sub', chanId, this._token);
     }
     MuBackend.prototype._resubscribe = function() {
+      var self = this;
       Object.keys(this._listeners).forEach(function(chanId) {
-        if(chanId.indexOf(':') !== -1 && this._listeners[chanId].length) {
-          this._subscribe(chanId);
+        if(chanId.indexOf(':') !== -1 && self._listeners[chanId].length) {
+          self._subscribe(chanId);
         }
       });
     }
@@ -215,37 +219,34 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
     MuBackend.prototype.removeListener = function(chanId, f)  {
       var arr = this._getChan(chanId);
       var pos = arr.indexOf(f) ;
-
       if(pos !== -1) {
         arr[pos] = arr[arr.length -1];
         arr.pop();
         if(!arr.length && chanId.indexOf(':') !== -1) {
-          console.log("TODO: socket-subscribe chan");
+          this._socket.emit('unsub', chanId);
         }
       }
+    };
+    MuBackend.prototype._emit = function(chanId, params)  {
+      this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
     };
     MuBackend.prototype.emit = function(chanId)  {
       var params = Array.prototype.slice.call(arguments, 1);
       if(chanId.indexOf(':') !== -1) {
-        console.log("TODO: socket emit");
+        this._socket.emit('pub', chanId, params);
+      } else {
+        this._emit(chanId, params);
       }
-      this._getChan(chanId).forEach( function(f) { f.apply(null, params); });
     };
     MuBackend.prototype.emitOnce = function(chanId, message)  {
       var params = Array.prototype.slice.call(arguments, 1);
-      var arr = this._getChan(chanId);
-      if(arr.length) {
-        arr[Math.random() * arr.length | 0].apply(null, params);  
-      } else if(chanId.indexOf(':') !== -1) {
-        console.log("TODO: socket emitOnce");
-      }
+      this._socket.emit('pubOnce', chanId, params);
     };
 ## Directory
 
     MuBackend.prototype.findTagged = function(tag) {
-      var p = new Promise();
       console.log("TODO: findTagged");
-      return p;
+      return new Promise();
     }
     MuBackend.prototype.tagSelf = function(tag, t) {
       console.log("TODO: tagSelf");
@@ -282,6 +283,7 @@ Routes:
     var crypto = require('crypto');
     var btoa = require('btoa');
     function uniqueId () { return btoa(crypto.randomBytes(12)); }
+    function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
 ## CouchDB
 
     var request = require('request');
@@ -293,7 +295,7 @@ Routes:
           callback(err ? {error: 'request error'} : JSON.parse(body));
         });
     }
-    function createUser (user, fullname, password) {
+    function createUser (user, fullname, password) { // ###
       request.put({
         url: couchUrl + '_users/org.couchdb.user:' + user,
         json: {
@@ -305,14 +307,9 @@ Routes:
           type: 'user'
         }
       }, function (err, __, body) {
-        console.log('createUser:', user);
+        console.log('createUser:', user, password);
       });
     }
-    (function() {
-      for(var user in config.createUsers) {
-        createUser(user, user, config.createUsers[user]);
-      }
-    })();
     function dbName (user, id) { // ###
       user = user.replace(/_/g, '-');
       var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
@@ -347,7 +344,12 @@ Routes:
         });
       });
     }
-
+    function validateUser(user, password, callback) { // ###
+        request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
+          var body = jsonOrEmpty(body);
+          if (err || password !== body.plain_pw) { callback("Login error"); } else { callback(); }
+        });
+    }
 ## Login
 
     var passport = require('passport');
@@ -408,95 +410,68 @@ Routes:
 
 ## socket.io, including message-queue(non-threadable)
 
-
     var io = require('socket.io')(server);
-    var p2pserver = require('socket.io-p2p-server').Server;
-    io.use(p2pserver);
-    function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
-    function validateUser(user, password, callback) {
-        request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-          var body = jsonOrEmpty(body);
-          console.log('validateUser', user, password, body.plain_pw);
-          if (err || password !== body.plain_pw) {
-            callback("Login error");
-          } else {
-            callback();
-          }
-        });
-    }
-
 ### message queue
 
-    var connectionSubs = {};
-    var subscribers = {};
-    var messages = {};
-    function getList (o, name) {
-      var result = o[name];
-      if (!result) {
-        result = [];
-        o[name] = result;
-      }
-      return result;
-    }
-    function unsubscribe (socket, user) {
-      var subs = getList(subscribers, user);
-      var pos = subs.indexOf(socket);
-      if (pos !== -1) {
-        subs[pos] = subs[subs.length - 1];
-        subs.pop();
-      }
-    }
-
+    var chans = {};
+    function getChan(id) { return chans[id] || (chans[id] = []); }
     io.on('connection', function (socket) { // ###
+      var subscribedTo = {};
       socket.on('loginToken', function (token, f) { // ####
         f(loginRequests[token]);
         delete loginRequests[token];
       });
       socket.on('loginPassword', validateUser); // ####
-      socket.on('dbName', function (user, db, f) { // ####
-        f(dbName(user, db));
-      });
+      socket.on('dbName', function (user, db, f) { f(dbName(user, db)); }); // ####
       socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
         validateUser(user, password, function(err) {
-          if(err) {
-            f(err);
-          } else {
-            createDatabase(user, db, isPrivate, f);
-          }
+          if(err) { f(err); } else { createDatabase(user, db, isPrivate, f); }
         });
       });
       socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
-      socket.on('subscribe', function (user, password) { // ####
-        request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-          if (!err && password === body.password) {
-            getList(connectionSubs, socket.id).push(user);
-            getList(subscribers, user).push(socket);
-            var msgs = getList(messages, user);
-            while (msgs.length) {
-              socket.emit('message', user, msgs.pop());
-            }
+      socket.on('sub', function (chan, password) { // ####
+        var splitPos = chan.indexOf(":");
+        if(splitPos !== -1) {
+        var user = chan.slice(0, splitPos);
+          if(user === '*') {
+            getChan(chan).push(socket);
+          } else {
+            validateUser(user, password, function(err) {
+              if(!err)  {
+                getChan(chan).push(socket);
+              }
+            });
           }
-        });
+        }
       });
-      socket.on('unsubscribe', function (user) { // ####
-        unsubscribe(socket, user);
+      socket.on('unsub', unsub); // ####
+      function unsub(chan) {
+        var chan = getChan(chan);
+        var pos = chan.indexOf(socket);
+        if(pos !== -1) {
+          chan[pos] = chan[chan.length - 1];
+          chan.pop();
+        }
+      }
+      socket.on('pub', function (chanId, msg) { // ####
+        var chan = getChan(chanId);
+        for(var i = 0; i < chan.length; ++i) {
+          chan[i].emit('message', chanId, msg);
+        }
       });
-      socket.on('message', function (user, msg) { // ####
-        var listeners = getList(subscribers, user);
-        if (listeners.length) {
-          listeners[listeners.length * Math.random() | 0].emit('message', msg);
-        } else {
-          getList(messages, user).push(msg);
+      socket.on('pubOnce', function (chanId, msg) { // ####
+        var chan = getChan(chanId);
+        if(chan.length) {
+          chan[chan.length * Math.random() | 0].emit('message', chanId, msg);
         }
       });
       socket.on('disconnect', function () { // ####
-        var subs = getList(connectionSubs, socket.id);
-        while (subs.length) {
-          unsubscribe(socket, subs.pop());
+        for(var chan in subscribedTo) {
+          unsubscribe(chan);
         }
-        delete connectionSubs[socket.id];
       });
-      setInterval(function() { socket.emit('connected');}, 1000); // ####
+      // ####
+      setInterval(function() {socket.emit('message', "blah", "foo");}, 10000);
     }); // ####
 ## CORS
 
@@ -526,4 +501,7 @@ Routes:
     app.get('/mu.intro.js', function (req, res) {
       res.end(introJs);
     });
-
+## create users from configfile
+    (function() {
+    for(var user in config.createUsers) { createUser(user, user, config.createUsers[user]); }
+    })();
