@@ -1,12 +1,13 @@
 <!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->
-# muBackend - in progress, not done yet
-
+# muBackend.js
 [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
 [![js-semistandard-style](https://img.shields.io/badge/code%20style-semistandard-brightgreen.svg?style=flat-square)](https://github.com/Flet/semistandard)
 [![Dependency Status](https://david-dm.org/rasmuserik/mubackend.svg?style=flat-square)](https://david-dm.org/rasmuserik/mubackend)
 [![npm](https://img.shields.io/npm/v/mubackend.svg)](https://www.npmjs.com/package/mubackend)
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
+
+# Under development, not done yet!
 
 MuBackend is a noBackend backend, <br>
 primarily for single page applications. <br> 
@@ -61,26 +62,39 @@ Communications between peers happens through channels. The channel id consists o
 
 ## Changelog
 
+- 0.1.0 Initial working version, supports login, database creation+access, and inter-user messaging, very unpolished.
+
 ## Backlog
 
-- automated test
-- example page for experimentation
-- `mu.findTagged(tag)` -> promise of list of user-ids with given tag
-- `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
-- Sample applications
-- Guide to install/self-host
-- Docker
-- Announce
+- 0.2
+  - automated test
+  - demo site
+  - better documentation
+- later
+  - Guide to install/self-host
+  - Docker
+  - Announce
+  - video tutorial
+  - example page for experimentation
+  - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
+  - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
+   - Sample applications
 
-## Introduction
-### The name
+
+## Versions
+
+Even minor versions are releases, odd minor versions are development. Semi-semver
+
+<!--
+# Naming etc.
+## The name
 
 mu is the SI-prefix for micro, ie. a micro-backend, or no-backend.
 
 A developer was laying in a hammock, pondering about backends.
 Then a cow came by and said "MU", and suddenly the develper was enlightened.
 
-### Nanos gigantum humeris insidentes
+## Nanos gigantum humeris insidentes
 
 *If I have seen further, it is by standing on the shoulders of giants.* - Isaac Newton
 
@@ -90,24 +104,25 @@ muBackend is just the empty space between the following technologies:
 - CouchDB for syncing PouchDB, at hosting data
 - Socket.io and Socket.io-p2p for communication between clients
 
-### Files
+## Files
 
-- README.md - README: a concatenation of intro.js, mu.js, and backend.js as literate code.
-- `intro.js` sample usage
-- `mu.js` the client side library
-- `backend.js the server side code
+- README.md - README: a concatenation of the source file as literate code.
+- `muBackend.js` project documentation, sample usage
+- `client.js` the client side library
+- `server.js the server side code
 - `dev.sh` shell script used during development, which autoruns/restarts the server and generates README.md
-- `config.sample.json` sample config file, the filename should be added as an argument when running `dev.sh` or `backend.js`
+- `config.sample.json` sample config file, the filename should be added as an argument when running `dev.sh` or `server.js`
 
-## Dev-dependencies
+-->
 
-On ubuntu linux: `apt-get install inotify-tools couchdb npm`
+# Installation
 
-# intro.js (literate code)
+Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
+
+# Sample usage
 
     window.mu = new window.MuBackend('https://api.solsort.com/');
-# Client (mu.js)
-
+# client.js
 We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 
 
@@ -250,14 +265,13 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
     MuBackend.prototype.tagSelf = function(tag, t) {
       console.log("TODO: tagSelf");
     }
-# Server (backend.js)
-
+# server.js
 Routes:
 
 - /auth/$PROVIDER/?RETURN_URL
 - /cors/?$URL
 - /socket.io/
-- /mu-demo.html /intro.js
+- /mu.demo.html /mu.intro.js
 - /mu.js
 
 ## Load config
@@ -494,7 +508,7 @@ Routes:
     app.get('/mu.min.js', function (req, res) {
       res.end(muJs);
     });
-    var introJs = fs.readFileSync('intro.js');
+    var introJs = fs.readFileSync('muBackend.js');
     app.get('/mu.intro.js', function (req, res) {
       res.end(introJs);
     });

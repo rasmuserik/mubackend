@@ -1,11 +1,9 @@
-// # Server (backend.js)
-//
 // Routes:
 //
 // - /auth/$PROVIDER/?RETURN_URL
 // - /cors/?$URL
 // - /socket.io/
-// - /mu-demo.html /intro.js
+// - /mu.demo.html /mu.intro.js
 // - /mu.js
 // 
 // ## Load config
@@ -242,7 +240,7 @@ var muJs = fs.readFileSync('mu.min.js');
 app.get('/mu.min.js', function (req, res) {
   res.end(muJs);
 });
-var introJs = fs.readFileSync('intro.js');
+var introJs = fs.readFileSync('muBackend.js');
 app.get('/mu.intro.js', function (req, res) {
   res.end(introJs);
 });

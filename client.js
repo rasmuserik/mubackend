@@ -1,5 +1,3 @@
-// # Client (mu.js)
-//
 // We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 //
 
