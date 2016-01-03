@@ -1,11 +1,14 @@
 <!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->
 # muBackend.js
+
 [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
 [![js-semistandard-style](https://img.shields.io/badge/code%20style-semistandard-brightgreen.svg?style=flat-square)](https://github.com/Flet/semistandard)
 [![Dependency Status](https://david-dm.org/rasmuserik/mubackend.svg?style=flat-square)](https://david-dm.org/rasmuserik/mubackend)
 [![npm](https://img.shields.io/npm/v/mubackend.svg)](https://www.npmjs.com/package/mubackend)
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
+
+Literate programming: This documentation _is_ and contains the entire source code.
 
 # Under development, not done yet!
 
@@ -26,7 +29,7 @@ can be implemented with web-scale performance.
 
 # API 
 
-API is under implemntation
+API is under implementation
 
 ## Initialisation
 
@@ -123,6 +126,7 @@ Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 
     window.mu = new window.MuBackend('https://api.solsort.com/');
 # client.js
+
 We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 
 
@@ -266,6 +270,7 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
       console.log("TODO: tagSelf");
     }
 # server.js
+
 Routes:
 
 - /auth/$PROVIDER/?RETURN_URL

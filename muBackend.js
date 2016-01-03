@@ -5,6 +5,8 @@
 // [![npm](https://img.shields.io/npm/v/mubackend.svg)](https://www.npmjs.com/package/mubackend)
 // [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 //
+// Literate programming: This documentation _is_ and contains the entire source code.
+//
 // # Under development, not done yet!
 //
 // MuBackend is a noBackend backend, <br>
@@ -24,7 +26,7 @@
 // 
 // # API 
 //
-// API is under implemntation
+// API is under implementation
 //
 // ## Initialisation
 //
