@@ -1,3 +1,5 @@
+// # muBackend.js 
+//
 // [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 // [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
 // [![js-semistandard-style](https://img.shields.io/badge/code%20style-semistandard-brightgreen.svg?style=flat-square)](https://github.com/Flet/semistandard)
@@ -43,7 +45,12 @@
 // - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
 // - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 //
-// ## Messaging
+// ## Messaging 
+//
+// - `mu.send(user, inbox, message)` - put an object to an inbox owned by a given user
+// - `mu.inbox(inbox)` - get a promise of a pouchdb representing an inbox
+//
+// ## Messaging (sockets - old)
 //
 // Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
 //
@@ -67,6 +74,7 @@
 // ## Backlog
 //
 // - 0.2
+//   - stop using sockets, user REST instead (for mobile battery performance)
 //   - automated test
 //   - demo site
 //   - better documentation

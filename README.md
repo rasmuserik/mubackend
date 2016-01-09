@@ -1,5 +1,5 @@
 <!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->
-# muBackend.js
+# muBackend.js 
 
 [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
@@ -46,7 +46,12 @@ MuBackend allows creation of sync-endpoints for PouchDB.
 - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
 - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 
-## Messaging
+## Messaging 
+
+- `mu.send(user, inbox, message)` - put an object to an inbox owned by a given user
+- `mu.inbox(inbox)` - get a promise of a pouchdb representing an inbox
+
+## Messaging (sockets - old)
 
 Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
 
@@ -70,6 +75,7 @@ Communications between peers happens through channels. The channel id consists o
 ## Backlog
 
 - 0.2
+  - stop using sockets, user REST instead (for mobile battery performance)
   - automated test
   - demo site
   - better documentation
@@ -134,6 +140,7 @@ We load socket.io as a static dependency, such that we can load it when offline,
     var io = require('socket.io-client'); 
     */ 
     var io = window.io;
+    var PouchDB = window.PouchDB
 
 
 Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
@@ -197,20 +204,27 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
             if(err) { reject(err); } else { resolve(); }});
       });
     };
-    MuBackend.prototype.newPouchDB = function(userId, dbName, PouchDB)  {
+    MuBackend.prototype.newPouchDB = function(userId, dbName)  {
       self = this;
       return new Promise(function(resolve, reject) {
         self._socket.emit('databaseUrl', userId, dbName, function(url) {
           if(self.userId) {
             url = url.replace('//', '//' +  self.userId + ':' + self._token + '@');
           }
-          PouchDB = PouchDB || window.PouchDB;
           resolve(new PouchDB(url));
         });
       });
     };
 ## Messaging
-
+### Inbox
+    MuBackend.prototype.send(function(user, inbox, message) {
+      this._socket.emit('send', user, inbox, message);
+    });
+    MuBackend.prototype.inbox(function(inbox) {
+      this.createDB("inbox:" + inbox);
+      return this.newPouchDB("inbox:" + inbox);
+    });
+### Channels
     MuBackend.prototype._getChan = function(chanId) {
       return this._listeners[chanId] || (this._listeners[chanId] = []);
     }
@@ -269,7 +283,7 @@ Promise-library needed for old versions of IE, will be removed when Edge has eno
     MuBackend.prototype.tagSelf = function(tag, t) {
       console.log("TODO: tagSelf");
     }
-# server.js
+# server.js 
 
 Routes:
 
@@ -349,7 +363,7 @@ Routes:
           }, function (err, _, body) {
             if (err || body.error) console.log('createDatabaseSecurityError:', name, body);
           });
-        }
+        } else {
         request.put({
           url: couchUrl + name + '/_design/readonly',
           json: {
@@ -359,6 +373,7 @@ Routes:
         }, function (err, _, body) {
           if (err || body.error) console.log('createDatabaseDesignError:', name, body);
         });
+        }
       });
     }
     function validateUser(user, password, callback) { // ###
@@ -445,6 +460,9 @@ Routes:
         });
       });
       socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
+      socket.on('send', function(user, inbox, msg, f) {  // ####
+        request.put({ url: couchUrl + dbName(user, "inbox:" + inbox), json: msg});
+      });
       socket.on('sub', function (chan, password) { // ####
         var splitPos = chan.indexOf(":");
         if(splitPos !== -1) {

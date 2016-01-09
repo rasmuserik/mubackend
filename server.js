@@ -1,3 +1,5 @@
+// # server.js 
+//
 // Routes:
 //
 // - /auth/$PROVIDER/?RETURN_URL
@@ -76,7 +78,7 @@ function createDatabase (user, id, isPrivate, callback) { // ###
       }, function (err, _, body) {
         if (err || body.error) console.log('createDatabaseSecurityError:', name, body);
       });
-    }
+    } else {
     request.put({
       url: couchUrl + name + '/_design/readonly',
       json: {
@@ -86,6 +88,7 @@ function createDatabase (user, id, isPrivate, callback) { // ###
     }, function (err, _, body) {
       if (err || body.error) console.log('createDatabaseDesignError:', name, body);
     });
+    }
   });
 }
 function validateUser(user, password, callback) { // ###
@@ -172,6 +175,9 @@ io.on('connection', function (socket) { // ###
     });
   });
   socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
+  socket.on('send', function(user, inbox, msg, f) {  // ####
+    request.put({ url: couchUrl + dbName(user, "inbox:" + inbox), json: msg});
+  });
   socket.on('sub', function (chan, password) { // ####
     var splitPos = chan.indexOf(":");
     if(splitPos !== -1) {

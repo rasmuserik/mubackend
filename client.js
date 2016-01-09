@@ -1,3 +1,5 @@
+// # client.js
+//
 // We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
 //
 
@@ -5,6 +7,7 @@
 var io = require('socket.io-client'); 
 */ 
 var io = window.io;
+var PouchDB = window.PouchDB
 
 //
 // Promise-library needed for old versions of IE, will be removed when Edge has enought market share that we do not need to support IE.
@@ -68,20 +71,27 @@ MuBackend.prototype.createDB = function(dbName, isPublic)  {
         if(err) { reject(err); } else { resolve(); }});
   });
 };
-MuBackend.prototype.newPouchDB = function(userId, dbName, PouchDB)  {
+MuBackend.prototype.newPouchDB = function(userId, dbName)  {
   self = this;
   return new Promise(function(resolve, reject) {
     self._socket.emit('databaseUrl', userId, dbName, function(url) {
       if(self.userId) {
         url = url.replace('//', '//' +  self.userId + ':' + self._token + '@');
       }
-      PouchDB = PouchDB || window.PouchDB;
       resolve(new PouchDB(url));
     });
   });
 };
 // ## Messaging
-//
+// ### Inbox
+MuBackend.prototype.send(function(user, inbox, message) {
+  this._socket.emit('send', user, inbox, message);
+});
+MuBackend.prototype.inbox(function(inbox) {
+  this.createDB("inbox:" + inbox);
+  return this.newPouchDB("inbox:" + inbox);
+});
+// ### Channels
 MuBackend.prototype._getChan = function(chanId) {
   return this._listeners[chanId] || (this._listeners[chanId] = []);
 }
