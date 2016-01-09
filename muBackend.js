@@ -50,6 +50,7 @@
 // - `mu.send(user, inbox, message)` - put an object to an inbox owned by a given user
 // - `mu.inbox(inbox)` - get a promise of a pouchdb representing an inbox
 //
+// <!--
 // ## Messaging (sockets - old)
 //
 // Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
@@ -64,6 +65,7 @@
 // 
 // - `connect` and `disconnect` when connected to mubackend.
 // - `signin`, `signout`
+// -->
 //
 // # Roadmap
 //
@@ -74,7 +76,8 @@
 // ## Backlog
 //
 // - 0.2
-//   - stop using sockets, user REST instead (for mobile battery performance)
+//   - common.js with db-url - no promise on create
+//   - remove messaging, REST instead of socket.io, (for mobile battery performance)
 //   - automated test
 //   - demo site
 //   - better documentation
