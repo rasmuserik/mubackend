@@ -35,12 +35,12 @@ function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {};
 //
 var request = require('request');
 var couchUrl = config.couchdb.url.replace('//', '//' +
-  config.couchdb.user + ':' + config.couchdb.password + '@');
+    config.couchdb.user + ':' + config.couchdb.password + '@');
 function getUser (user, callback) {
   request.get(couchUrl + '_users/org.couchdb.user:' + user,
-    function (err, response, body) {
-      callback(err ? {error: 'request error'} : JSON.parse(body));
-    });
+      function (err, response, body) {
+        callback(err ? {error: 'request error'} : JSON.parse(body));
+      });
 }
 function createUser (user, password, meta) { // ###
   request.put({
@@ -74,28 +74,28 @@ function createDatabase (user, id, isPrivate, callback) { // ###
       request.put({
         url: couchUrl + name + '/_security',
         json: {'admins': { 'names': [], 'roles': [] },
-        'members': {'names': [user], 'roles': []}}
+          'members': {'names': [user], 'roles': []}}
       }, function (err, _, body) {
         if (err || body.error) console.log('createDatabaseSecurityError:', name, body);
       });
     } else {
-    request.put({
-      url: couchUrl + name + '/_design/readonly',
-      json: {
-        validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
-                                 user + '")throw "Forbidden";}'
-      }
-    }, function (err, _, body) {
-      if (err || body.error) console.log('createDatabaseDesignError:', name, body);
-    });
+      request.put({
+        url: couchUrl + name + '/_design/readonly',
+        json: {
+          validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
+                                   user + '")throw "Forbidden";}'
+        }
+      }, function (err, _, body) {
+        if (err || body.error) console.log('createDatabaseDesignError:', name, body);
+      });
     }
   });
 }
 function validateUser(user, password, callback) { // ###
-    request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-      var body = jsonOrEmpty(body);
-      if (err || password !== body.plain_pw) { callback("Login error"); } else { callback(); }
-    });
+  request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
+    var body = jsonOrEmpty(body);
+    if (err || password !== body.plain_pw) { callback("Login error"); } else { callback(); }
+  });
 }
 // ## Login
 //
@@ -138,12 +138,12 @@ function login (access, refresh, profile, done) {
 function addStrategy (name, Strategy, opt) {
   passport.use(new Strategy(config[name], login));
   var callbackName = 'auth/' + name + '/callback'
-  config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
+    config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
   app.get('/auth/' + name,
-    function (req, res) {
-      req.session.app = req.url.replace(/^[^?]*./, '');
-      return passport.authenticate(name, opt)(req, res);
-    });
+      function (req, res) {
+        req.session.app = req.url.replace(/^[^?]*./, '');
+        return passport.authenticate(name, opt)(req, res);
+      });
   app.get('/' + callbackName, loginHandler(name));
 }
 
@@ -181,7 +181,7 @@ io.on('connection', function (socket) { // ###
   socket.on('sub', function (chan, password) { // ####
     var splitPos = chan.indexOf(":");
     if(splitPos !== -1) {
-    var user = chan.slice(0, splitPos);
+      var user = chan.slice(0, splitPos);
       if(user === '*') {
         getChan(chan).push(socket);
       } else {
@@ -236,11 +236,11 @@ app.get('/cors/', function (req, res) {
 var fs = require('fs');
 app.get('/mu.demo.html', function (req, res) {
   res.end('<html><body>' +
-    '<script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>' +
-    '<script src=/socket.io/socket.io.js></script>' +
-    '<script src=/mu.min.js></script>' +
-    '<script src=/mu.intro.js></script>' +
-    '</body></html>');
+      '<script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>' +
+      '<script src=/socket.io/socket.io.js></script>' +
+      '<script src=/mu.min.js></script>' +
+      '<script src=/mu.intro.js></script>' +
+      '</body></html>');
 });
 var muJs = fs.readFileSync('mu.min.js');
 app.get('/mu.min.js', function (req, res) {
@@ -252,5 +252,5 @@ app.get('/mu.intro.js', function (req, res) {
 });
 // ## create users from configfile
 (function() {
-for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
+  for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
 })();

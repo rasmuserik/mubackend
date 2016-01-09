@@ -4,8 +4,8 @@
 //
 
 /* 
-var io = require('socket.io-client'); 
-*/ 
+   var io = require('socket.io-client'); 
+   */ 
 var io = window.io;
 var PouchDB = window.PouchDB
 
@@ -66,9 +66,9 @@ MuBackend.prototype.signOut = function () {
 MuBackend.prototype.createDB = function(dbName, isPublic)  {
   var self = this;
   return new Promise(function(resolve, reject) {
-  self._socket.emit('createDatabase', 
-      self.userId, dbName, !isPublic, self._token, function(err) {
-        if(err) { reject(err); } else { resolve(); }});
+    self._socket.emit('createDatabase', 
+        self.userId, dbName, !isPublic, self._token, function(err) {
+          if(err) { reject(err); } else { resolve(); }});
   });
 };
 MuBackend.prototype.newPouchDB = function(userId, dbName)  {
