@@ -84,13 +84,13 @@ MuBackend.prototype.newPouchDB = function(userId, dbName)  {
 };
 // ## Messaging
 // ### Inbox
-MuBackend.prototype.send(function(user, inbox, message) {
+MuBackend.prototype.send = function(user, inbox, message) {
   this._socket.emit('send', user, inbox, message);
-});
-MuBackend.prototype.inbox(function(inbox) {
+};
+MuBackend.prototype.inbox = function(inbox) {
   this.createDB("inbox:" + inbox);
   return this.newPouchDB("inbox:" + inbox);
-});
+};
 // ### Channels
 MuBackend.prototype._getChan = function(chanId) {
   return this._listeners[chanId] || (this._listeners[chanId] = []);
