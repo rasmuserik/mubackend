@@ -134,6 +134,14 @@ Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 # Sample usage
 
     window.mu = new window.MuBackend('https://api.solsort.com/');
+# common.js
+
+Shared code between client and server
+
+    exports.dbName = function(user, id) {
+      return ('mu_' + user.replace(/_/g, '-') + '_' + encodeURIComponent(id))
+        .toLowerCase().replace(/[^a-z0-9_$()+-]/g, '$');
+    }
 # client.js
 
 We load socket.io as a static dependency, such that we can load it when offline, and it will go online when available
@@ -317,6 +325,7 @@ Routes:
 
     var crypto = require('crypto');
     var btoa = require('btoa');
+    var dbName = require('./common.js').dbName;
     function uniqueId () { return btoa(crypto.randomBytes(12)); }
     function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
 ## CouchDB
@@ -343,13 +352,6 @@ Routes:
         }
       }, function (err, __, body) {
       });
-    }
-    function dbName (user, id) { // ###
-      user = user.replace(/_/g, '-');
-      var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
-      dbName = dbName.toLowerCase();
-      dbName = dbName.replace(/[^a-z0-9_$()+-]/g, '$');
-      return dbName;
     }
     function createDatabase (user, id, isPrivate, callback) { // ###
       var name = dbName(user, id);

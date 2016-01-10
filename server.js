@@ -29,6 +29,7 @@ server.listen(config.port);
 //
 var crypto = require('crypto');
 var btoa = require('btoa');
+var dbName = require('./common.js').dbName;
 function uniqueId () { return btoa(crypto.randomBytes(12)); }
 function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
 // ## CouchDB
@@ -55,13 +56,6 @@ function createUser (user, password, meta) { // ###
     }
   }, function (err, __, body) {
   });
-}
-function dbName (user, id) { // ###
-  user = user.replace(/_/g, '-');
-  var dbName = 'mu_' + user + '_' + encodeURIComponent(id);
-  dbName = dbName.toLowerCase();
-  dbName = dbName.replace(/[^a-z0-9_$()+-]/g, '$');
-  return dbName;
 }
 function createDatabase (user, id, isPrivate, callback) { // ###
   var name = dbName(user, id);
