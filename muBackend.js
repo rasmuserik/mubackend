@@ -17,7 +17,7 @@
 //
 // - *Authentication* of users through different providers
 // - *Synchronization*  of user data across different clients/devices
-// - *Communication* between users, both messaging and discovery
+// - *Communication* sending messages between users
 //
 // The design criterias are: *simplicity* and *scaleability*. <br>
 // This README.md, contains the *entire* source code, <br>
@@ -42,30 +42,13 @@
 //
 // MuBackend allows creation of sync-endpoints for PouchDB. 
 //
-// - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user. Returns promise.
-// - `mu.newPouchDB(userId, dbName, PouchDB)` - returns promise of a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
+// - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user.
+// - `mu.newPouchDB(userId, dbName, PouchDB)` - returns a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 //
 // ## Messaging 
 //
 // - `mu.send(user, inbox, message)` - put an object to an inbox owned by a given user
-// - `mu.inbox(inbox)` - get a promise of a pouchdb representing an inbox
-//
-// <!--
-// ## Messaging (sockets - old)
-//
-// Communications between peers happens through channels. The channel id consists of an owner and a name, separated by ":". Anybody can write to a channel, but only the owner can listen. There is a special owner "*", which also allows everybody to listen. The API is inspired by socket.io/node.js.
-//
-// - `mu.on(mu.userId + ":someChannel", f)` or `mu.on("*:someChannel", f)` - listen to events
-// - `mu.on('connect', f)` and `mu.on('disconnect', f)` - get notified on connect/disconnect
-// - `mu.removeListener(id, f)` stop listening
-// - `mu.emit(message-chan, message)` - emit to all listeners if connected
-// - `mu.emitOnce(message-chan, message)` - emit to one random listener if connected
-//
-// ## Events
-// 
-// - `connect` and `disconnect` when connected to mubackend.
-// - `signin`, `signout`
-// -->
+// - `mu.inbox(inbox)` - get a pouchdb representing an inbox
 //
 // # Roadmap
 //
@@ -76,10 +59,12 @@
 // ## Backlog
 //
 // - 0.2
-//   - common.js with db-url - no promise on create
-//   - remove messaging, REST instead of socket.io, (for mobile battery performance)
-//   - automated test
+//   - √common.js with db-url - no promise on create
+//   - √remove messaging, REST instead of socket.io, (for mobile battery performance)
+//   - √send/inbox api
+//   - √icon
 //   - demo site
+//   - automated test
 //   - better documentation
 // - later
 //   - Guide to install/self-host
@@ -87,7 +72,7 @@
 //   - Announce
 //   - video tutorial
 //   - example page for experimentation
-//   - `mu.findTagged(tag)` -> promise of list of user-ids with given tag
+//   - `mu.findTagged(tag)` -> list of user-ids with given tag
 //   - `mu.tagSelf(tag, true/false)` -> register/deregister current user as having a tag
 //    - Sample applications
 // 

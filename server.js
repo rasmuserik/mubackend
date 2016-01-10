@@ -1,13 +1,5 @@
 // # server.js 
 //
-// Routes:
-//
-// - /auth/$PROVIDER/?RETURN_URL
-// - /cors/?$URL
-// - /socket.io/
-// - /mu.demo.html /mu.intro.js
-// - /mu.js
-// 
 // ## Load config
 //
 var configFile = process.argv[process.argv.length - 1];
@@ -31,7 +23,7 @@ var crypto = require('crypto');
 var btoa = require('btoa');
 var dbName = require('./common.js').dbName;
 function uniqueId () { return btoa(crypto.randomBytes(12)); }
-function jsonOrEmpty(str) { try { return JSON.parse(str);} catch(_) { return {}; }}
+function jsonOrNull(str) { try { return JSON.parse(str);} catch(_) { return undefined; }}
 // ## CouchDB
 //
 var request = require('request');
@@ -87,7 +79,7 @@ function createDatabase (user, id, isPrivate, callback) { // ###
 }
 function validateUser(user, password, callback) { // ###
   request.get(couchUrl + '_users/org.couchdb.user:' + user, function (err, _, body) {
-    var body = jsonOrEmpty(body);
+    var body = jsonOrNull(body) || {};
     if (err || password !== body.plain_pw) { callback("Login error"); } else { callback(); }
   });
 }
@@ -148,74 +140,33 @@ addStrategy('google', require('passport-google-oauth').OAuth2Strategy, {scope: '
 addStrategy('facebook', require('passport-facebook'));
 addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'});
 
-// ## socket.io, including message-queue(non-threadable)
-//
-var io = require('socket.io')(server);
-// ### message queue
-//
-var chans = {};
-function getChan(id) { return chans[id] || (chans[id] = []); }
-io.on('connection', function (socket) { // ###
-  var subscribedTo = {};
-  socket.on('loginToken', function (token, f) { // ####
-    f(loginRequests[token]);
-    delete loginRequests[token];
+// ## HTTP-api
+function handleHttp(name, f) { // ###
+  app.all('/mu/' + name, function(req, res) {
+    console.log('/moo', name);
+    req.pipe(require('concat-stream')(function(body) {
+      f.apply(null, (jsonOrNull(body) || []).concat([function(){
+        res.end(JSON.stringify(Array.prototype.slice.call(arguments, 0)));
+      }]));
+    }));
   });
-  socket.on('loginPassword', validateUser); // ####
-  socket.on('dbName', function (user, db, f) { f(dbName(user, db)); }); // ####
-  socket.on('createDatabase', function (user, db, isPrivate, password, f) { // ####
-    validateUser(user, password, function(err) {
-      if(err) { f(err); } else { createDatabase(user, db, isPrivate, f); }
-    });
+};
+handleHttp('loginPassword', validateUser); // ###
+handleHttp('loginToken', function (token, f) { // ###
+  f(loginRequests[token]);
+  delete loginRequests[token];
+});
+handleHttp('createDB', function (user, db, isPrivate, password, f) { // ###
+  validateUser(user, password, function(err) {
+    if(err) { f(err); } else { createDatabase(user, db, isPrivate, f); }
   });
-  socket.on('databaseUrl', function(user, db, f) { f(config.couchdb.url + dbName(user, db)); }); // ####
-  socket.on('send', function(user, inbox, msg, f) {  // ####
-    request.put({ url: couchUrl + dbName(user, "inbox:" + inbox), json: msg});
-  });
-  socket.on('sub', function (chan, password) { // ####
-    var splitPos = chan.indexOf(":");
-    if(splitPos !== -1) {
-      var user = chan.slice(0, splitPos);
-      if(user === '*') {
-        getChan(chan).push(socket);
-      } else {
-        validateUser(user, password, function(err) {
-          if(!err)  {
-            getChan(chan).push(socket);
-          }
-        });
-      }
-    }
-  });
-  socket.on('unsub', unsub); // ####
-  function unsub(chan) {
-    var chan = getChan(chan);
-    var pos = chan.indexOf(socket);
-    if(pos !== -1) {
-      chan[pos] = chan[chan.length - 1];
-      chan.pop();
-    }
-  }
-  socket.on('pub', function (chanId, msg) { // ####
-    var chan = getChan(chanId);
-    for(var i = 0; i < chan.length; ++i) {
-      chan[i].emit('message', chanId, msg);
-    }
-  });
-  socket.on('pubOnce', function (chanId, msg) { // ####
-    var chan = getChan(chanId);
-    if(chan.length) {
-      chan[chan.length * Math.random() | 0].emit('message', chanId, msg);
-    }
-  });
-  socket.on('disconnect', function () { // ####
-    for(var chan in subscribedTo) {
-      unsubscribe(chan);
-    }
-  });
-  // ####
-  setInterval(function() {socket.emit('message', "blah", "foo");}, 10000);
-}); // ####
+});
+handleHttp('send', function(user, inbox, msg, f) {  // ###
+  request.put({ url: couchUrl + dbName(user, "inbox_" + inbox) + "/" + Date.now(), json: msg}, 
+      function(err, _, body) {
+        f(err, body);
+      });
+});
 // ## CORS
 //
 app.get('/cors/', function (req, res) {
@@ -227,23 +178,7 @@ app.get('/cors/', function (req, res) {
 
 // ## Hosting of static resources
 //
-var fs = require('fs');
-app.get('/mu.demo.html', function (req, res) {
-  res.end('<html><body>' +
-      '<script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>' +
-      '<script src=/socket.io/socket.io.js></script>' +
-      '<script src=/mu.min.js></script>' +
-      '<script src=/mu.intro.js></script>' +
-      '</body></html>');
-});
-var muJs = fs.readFileSync('mu.min.js');
-app.get('/mu.min.js', function (req, res) {
-  res.end(muJs);
-});
-var introJs = fs.readFileSync('muBackend.js');
-app.get('/mu.intro.js', function (req, res) {
-  res.end(introJs);
-});
+app.use('/mu/', require('express').static('./'));
 // ## create users from configfile
 (function() {
   for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
