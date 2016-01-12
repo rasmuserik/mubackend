@@ -1,5 +1,5 @@
 <!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->
-# muBackend.js 
+# muBackend
 
 [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
@@ -116,9 +116,25 @@ muBackend is just the empty space between the following technologies:
 
 Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 
-# Sample usage
+# example.js
 
     window.mu = new window.MuBackend('https://api.solsort.com/');
+# index.html
+
+The html code, used for the example above, is:
+    <!DOCTYPE html>
+    <html>
+      <head><meta charset="UTF-8"><title>muBackend example</title></head>
+      <body>
+        <div style=font-family:;font-size:1000%>
+          無μ
+        </div>
+        <button id=restTest>rest test</button>
+        <script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>
+        <script src=mu.min.js></script>
+        <script src=muBackend.js></script>
+      </body>
+    </html>
 # common.js
 
 Shared code between client and server

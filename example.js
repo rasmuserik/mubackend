@@ -1,4 +1,4 @@
-// # muBackend.js 
+// # muBackend
 //
 // [![Build Status](https://travis-ci.org/rasmuserik/mubackend.svg?branch=master)](https://travis-ci.org/rasmuserik/mubackend)
 // [![Code Climate](https://codeclimate.com/github/rasmuserik/mubackend/badges/gpa.svg)](https://codeclimate.com/github/rasmuserik/mubackend)
@@ -115,6 +115,9 @@
 //
 // Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 //
-// # Sample usage
+// # example.js
 //
 window.mu = new window.MuBackend('https://api.solsort.com/');
+// # index.html
+//
+// The html code, used for the example above, is:
