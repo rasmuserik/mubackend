@@ -5,4 +5,5 @@ echo '<!-- MACHINE GENERATED - DO NOT EDIT - USE `./dev.sh` -->' > README.md
 for file in example.js index.html common.js client.js server.js
 do
   cat $file | sed -e "s/^[^/]/    \0/" | sed -e s'/^[/][/] \?//' >> README.md
+  echo "" >> README.md
 done

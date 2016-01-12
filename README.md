@@ -122,6 +122,7 @@ Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 # index.html
 
 The html code, used for the example above, is:
+
     <!DOCTYPE html>
     <html>
       <head><meta charset="UTF-8"><title>muBackend example</title></head>
@@ -135,6 +136,7 @@ The html code, used for the example above, is:
         <script src=muBackend.js></script>
       </body>
     </html>
+
 # common.js
 
 Shared code between client and server
@@ -143,6 +145,7 @@ Shared code between client and server
       return ('mu_' + user.replace(/_/g, '-') + '_' + encodeURIComponent(id))
         .toLowerCase().replace(/[^a-z0-9_$()+-]/g, '$');
     }
+
 # client.js
 
     var PouchDB = window.PouchDB
@@ -234,6 +237,7 @@ Shared code between client and server
     MuBackend.prototype.tagSelf = function(tag, t) {
       console.log("TODO: tagSelf");
     }
+
 # server.js 
 
 ## Load config
@@ -419,3 +423,4 @@ Shared code between client and server
     (function() {
       for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
     })();
+
