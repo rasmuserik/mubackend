@@ -13,12 +13,14 @@ window.MuBackend = function MuBackend(url) {
   this._url = url;
   this.userId = window.localStorage.getItem('mubackend' + url + 'userId');
   this._token = window.localStorage.getItem('mubackend' + url + '_token');
-  if(!this.userId && window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
-    var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
+  if(/*!this.userId &&*/ window.location.href.indexOf("muBackendLoginToken=") !== -1) {
+    var token = window.location.href.replace(/.*muBackendLoginToken=/, "");
     this._rpc('loginToken', token, function(result) {
       result = result || {};
       if(result.user && result.token) {
         self._signIn(result.user, result.token);
+        window.location.href = window.location.href.replace(/muBackendLoginToken=.*/, "");
+        window.location.reload();
       } 
     });
   }
@@ -61,7 +63,7 @@ MuBackend.prototype.signOut = function () {
 };
 // ## Storage
 //
-MuBackend.prototype.createDB = function(dbName, isPublic)  {
+MuBackend.prototype.createDB = function(dbName, isPublic, cb)  {
   this._rpc('createDB', this.userId, dbName, !isPublic, this._token, cb || function() {});
 };
 MuBackend.prototype.newPouchDB = function(dbName, userId)  {

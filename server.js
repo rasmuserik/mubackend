@@ -15,6 +15,10 @@ config.port = config.port || 4078;
 // ## start express server
 var app = require('express')();
 app.use(require('express-session')(config.expressSession));
+app.use(function (req, res, next) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    return next();
+});
 var server = require('http').Server(app);
 server.listen(config.port);
 // ## Util

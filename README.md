@@ -44,7 +44,7 @@ API is under implementation
 MuBackend allows creation of sync-endpoints for PouchDB. 
 
 - `mu.createDB(dbName, public)` - allocates a new online database, owned by the current user. If `public` is true, then it will be readable by anyone. Otherwise it will only be readable by the current user.
-- `mu.newPouchDB(userId, dbName, PouchDB)` - returns a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
+- `mu.newPouchDB(dbName, [userId])` - returns a new PouchDB online database connected to a named db belonging to a given user. It will be read-only, unless userID is the current user. `PouchDB` is the PouchDB constructor. This is often just used for replication to/from a locally cached PouchDB.
 
 ## Messaging 
 
@@ -118,22 +118,45 @@ Dev-dependency on ubuntu linux: `apt-get install inotify-tools couchdb npm`
 
 # example.js
 
+
     window.mu = new window.MuBackend('https://api.solsort.com/');
+    document.getElementById('userid').innerHTML = mu.userId;
+
+    mu.createDB('example', true, function(err) {
+      var p = mu.newPouchDB('example');
+      p.get("counter", function(err, o) {
+        o = o || {_id: 'counter', value: 0};
+        document.getElementById('counter').innerHTML = o.value;
+        ++o.value;
+        p.put(o);
+      });
+    });
+
 # index.html
 
 The html code, used for the example above, is:
 
     <!DOCTYPE html>
     <html>
-      <head><meta charset="UTF-8"><title>muBackend example</title></head>
+      <head><meta charset="UTF-8"><title>muBackend example - μ無</title></head>
       <body>
-        <div style=font-family:;font-size:1000%>
-          無μ
-        </div>
-        <button id=restTest>rest test</button>
+        <p><b>muBackend examples</b>, see <a href=https://github.com/rasmuserik/mubackend>github:rasmuserik/mubackend</a> for more info.</p>
+        <p>This demo support signin, plus database access, demonstrated by incrementing a value in an object in the user-owned hosted database.</p>
+
+        <p>Sign in with:
+        <button onclick="mu.signInWith('github');">github</button>
+        <button onclick="mu.signInWith('twitter');">twitter</button>
+        <button onclick="mu.signInWith('google');">google</button>
+        <button onclick="mu.signInWith('facebook');">facebook</button>
+        <button onclick="mu.signInWith('linkedin');">linkedin</button>
+        <button onclick="mu.signInWith('wordpress');">wordpress</button>
+        </p><p><button onclick="mu.signOut();location.reload();">Sign out</button>
+        <p>Current login: <span id=userid></span></p>
+        <p>Counter in database: <span id=counter></span></p>
+
         <script src=https://cdn.jsdelivr.net/pouchdb/5.1.0/pouchdb.min.js></script>
         <script src=mu.min.js></script>
-        <script src=muBackend.js></script>
+        <script src=example.js></script>
       </body>
     </html>
 
@@ -161,12 +184,14 @@ Shared code between client and server
       this._url = url;
       this.userId = window.localStorage.getItem('mubackend' + url + 'userId');
       this._token = window.localStorage.getItem('mubackend' + url + '_token');
-      if(!this.userId && window.location.hash.indexOf("muBackendLoginToken=") !== -1) {
-        var token = window.location.hash.replace(/.*muBackendLoginToken=/, "");
+      if(/*!this.userId &&*/ window.location.href.indexOf("muBackendLoginToken=") !== -1) {
+        var token = window.location.href.replace(/.*muBackendLoginToken=/, "");
         this._rpc('loginToken', token, function(result) {
           result = result || {};
           if(result.user && result.token) {
             self._signIn(result.user, result.token);
+            window.location.href = window.location.href.replace(/muBackendLoginToken=.*/, "");
+            window.location.reload();
           } 
         });
       }
@@ -209,7 +234,7 @@ Shared code between client and server
     };
 ## Storage
 
-    MuBackend.prototype.createDB = function(dbName, isPublic)  {
+    MuBackend.prototype.createDB = function(dbName, isPublic, cb)  {
       this._rpc('createDB', this.userId, dbName, !isPublic, this._token, cb || function() {});
     };
     MuBackend.prototype.newPouchDB = function(dbName, userId)  {
@@ -255,6 +280,10 @@ Shared code between client and server
 ## start express server
     var app = require('express')();
     app.use(require('express-session')(config.expressSession));
+    app.use(function (req, res, next) {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        return next();
+    });
     var server = require('http').Server(app);
     server.listen(config.port);
 ## Util
