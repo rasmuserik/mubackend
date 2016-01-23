@@ -106,9 +106,9 @@ muBackend is just the empty space between the following technologies:
 - README.md - README: a concatenation of the source file as literate code.
 - `muBackend.js` project documentation, sample usage
 - `client.js` the client side library
-- `server.js the server side code
+- `mubackend.js the server side code
 - `dev.sh` shell script used during development, which autoruns/restarts the server and generates README.md
-- `config.sample.json` sample config file, the filename should be added as an argument when running `dev.sh` or `server.js`
+- `config.sample.json` sample config file, the filename should be added as an argument when running `dev.sh` or `mubackend.js`
 
 -->
 
@@ -263,7 +263,7 @@ Shared code between client and server
       console.log("TODO: tagSelf");
     }
 
-# server.js 
+# mubackend.js 
 
 ## Load config
 

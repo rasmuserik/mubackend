@@ -4,8 +4,9 @@
 //
 var configFile = process.argv[process.argv.length - 1];
 if (configFile.slice(-5) !== '.json') {
-  console.log('Error: backend needs .json config file as argument.');
-  process.exit(-1);
+  console.log('Warning: backend needs .json config file as argument.');
+  console.log('using default config-file at /solsort/mubackend.json');
+  configFile = '/solsort/mubackend.json';
 }
 var config = require(configFile);
 // ### Default configuration
@@ -21,6 +22,7 @@ app.use(function (req, res, next) {
 });
 var server = require('http').Server(app);
 server.listen(config.port);
+console.log('starting server on port', config.port);
 // ## Util
 //
 var crypto = require('crypto');
@@ -123,6 +125,7 @@ function loginHandler (provider) {
 }
 
 function login (access, refresh, profile, done) {
+  console.log('login', JSON.stringify(profile));
   return done(profile);
 }
 function addStrategy (name, Strategy, opt) {
@@ -147,7 +150,6 @@ addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'}
 // ## HTTP-api
 function handleHttp(name, f) { // ###
   app.all('/mu/' + name, function(req, res) {
-    console.log('/moo', name);
     req.pipe(require('concat-stream')(function(body) {
       f.apply(null, (jsonOrNull(body) || []).concat([function(){
         res.end(JSON.stringify(Array.prototype.slice.call(arguments, 0)));

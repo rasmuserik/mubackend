@@ -5,7 +5,7 @@ do
   kill `cat .pid`
   sleep 0.1
   ./build.sh
-  node server.js $@ &
+  node mubackend.js $@ &
   echo $! > .pid
   sleep 3
 done
