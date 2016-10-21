@@ -39,15 +39,9 @@ config = {
   port: process.env.PORT || 8888
 };
 
-console.log(config);
-
 // ## start express server
 var app = require('express')();
 app.use(require('express-session')(config.expressSession));
-app.use(function (req, res, next) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    return next();
-});
 var server = require('http').Server(app);
 server.listen(config.port);
 console.log('starting server on port', config.port);
@@ -96,6 +90,7 @@ var loginRequests = {};
 function loginHandler (provider) {
   return function (req, res) {
     passport.authenticate(provider)(req, res, function (profile) {
+      console.log('auth', req, res, profile);
       if (profile.provider === 'Wordpress') profile.id = profile._json.ID;
       var user = encodeURIComponent(profile.provider + '_' + profile.id);
       if (!profile.id) {
