@@ -28,7 +28,7 @@ config = {
   "expressSession": {
     "resave": false,
     "saveUninitialized": true,
-    "secret": process.env.SESSION_SECRET | String(Math.random())
+    "secret": process.env.SESSION_SECRET || String(Math.random())
   },
   "url": process.env.URL,
   "couchdb": {
@@ -40,7 +40,6 @@ config = {
 };
 
 console.log(config);
-
 
 // ## start express server
 var app = require('express')();
