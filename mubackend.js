@@ -133,7 +133,7 @@ function addStrategy (name, Strategy, opt) {
           opt = Object.assign({}, opt);
           opt.scope = req.query.scope;
         }
-        req.session.app = req.url.replace(/^[^?]*./, '');
+        req.session.app = req.query.url;
         return passport.authenticate(name, opt)(req, res);
       });
   app.get('/' + callbackName, loginHandler(name));
