@@ -36,7 +36,7 @@ config = {
   "expressSession": {
     "secret": process.env.SESSION_SECRET | String(Math.random())
   },
-  "url": process.env.URL
+  "url": process.env.URL,
   "couchdb": {
     "url": process.env.COUCHDB_URL,
     "user": process.env.COUCHDB_USER || "admin",
