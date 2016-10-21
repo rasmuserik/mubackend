@@ -8,10 +8,42 @@ if (configFile.slice(-5) !== '.json') {
   console.log('using default config-file at /solsort/mubackend.json');
   configFile = '/solsort/mubackend.json';
 }
-var config = require(configFile);
-// ### Default configuration
-//
-config.port = config.port || 4078;
+config = {
+  "github": {
+    "clientID": process.env.GITHUB_ID,
+    "clientSecret": process.env.GITHUB_SECRET
+  },
+  "twitter": {
+    "consumerKey": process.env.TWITTER_ID,
+    "consumerSecret": process.env.TWITTER_SECRET
+  },
+  "wordpress": {
+    "clientID": process.env.WORDPRESS_ID,
+    "clientSecret": process.env.WORDPRESS_SECRET
+  },
+  "facebook": {
+    "clientID": process.env.FACEBOOK_ID,
+    "clientSecret": process.env.FACEBOOK_SECRET
+  },
+  "google": {
+    "clientID": process.env.GOOGLE_ID,
+    "clientSecret": process.env.GOOGLE_SECRET
+  },
+  "linkedin": {
+    "consumerKey": process.env.LINKEDIN_ID,
+    "consumerSecret": process.env.LINKEDIN_SECRET
+  },
+  "expressSession": {
+    "secret": process.env.SESSION_SECRET | String(Math.random())
+  },
+  "url": process.env.URL
+  "couchdb": {
+    "url": process.env.COUCHDB_URL,
+    "user": process.env.COUCHDB_USER || "admin",
+    "password": process.env.COUCHDB_PASS
+  },
+  port: process.env.PORT || 8888
+}
 
 // ## start express server
 var app = require('express')();
@@ -27,7 +59,6 @@ console.log('starting server on port', config.port);
 //
 var crypto = require('crypto');
 var btoa = require('btoa');
-var dbName = require('./common.js').dbName;
 function uniqueId () { return btoa(crypto.randomBytes(12)); }
 function jsonOrNull(str) { try { return JSON.parse(str);} catch(_) { return undefined; }}
 // ## CouchDB
@@ -53,34 +84,6 @@ function createUser (user, password, meta) { // ###
       type: 'user'
     }
   }, function (err, __, body) {
-  });
-}
-function createDatabase (user, id, isPrivate, callback) { // ###
-  var name = dbName(user, id);
-  request.put({
-    url: couchUrl + name,
-    json: {}
-  }, function (err, _, body) {
-    callback(err || body.error);
-    if (isPrivate) {
-      request.put({
-        url: couchUrl + name + '/_security',
-        json: {'admins': { 'names': [], 'roles': [] },
-          'members': {'names': [user], 'roles': []}}
-      }, function (err, _, body) {
-        if (err || body.error) console.log('createDatabaseSecurityError:', name, body);
-      });
-    } else {
-      request.put({
-        url: couchUrl + name + '/_design/readonly',
-        json: {
-          validate_doc_update: 'function(_1, _2, user){if(user.name!=="' + 
-                                   user + '")throw "Forbidden";}'
-        }
-      }, function (err, _, body) {
-        if (err || body.error) console.log('createDatabaseDesignError:', name, body);
-      });
-    }
   });
 }
 function validateUser(user, password, callback) { // ###
@@ -162,17 +165,6 @@ handleHttp('loginToken', function (token, f) { // ###
   f(loginRequests[token]);
   delete loginRequests[token];
 });
-handleHttp('createDB', function (user, db, isPrivate, password, f) { // ###
-  validateUser(user, password, function(err) {
-    if(err) { f(err); } else { createDatabase(user, db, isPrivate, f); }
-  });
-});
-handleHttp('send', function(user, inbox, msg, f) {  // ###
-  request.put({ url: couchUrl + dbName(user, "inbox_" + inbox) + "/" + Date.now(), json: msg}, 
-      function(err, _, body) {
-        f(err, body);
-      });
-});
 // ## CORS
 //
 app.get('/cors/', function (req, res) {
@@ -185,7 +177,3 @@ app.get('/cors/', function (req, res) {
 // ## Hosting of static resources
 //
 app.use('/mu/', require('express').static('./'));
-// ## create users from configfile
-(function() {
-  for(var user in config.createUsers) { createUser(user, config.createUsers[user]); }
-})();
