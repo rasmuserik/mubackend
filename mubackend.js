@@ -90,7 +90,7 @@ var loginRequests = {};
 function loginHandler (provider) {
   return function (req, res) {
     passport.authenticate(provider)(req, res, function (profile) {
-      console.log('auth', req, res, profile);
+      //console.log('auth', req, res, profile);
       if (profile.provider === 'Wordpress') profile.id = profile._json.ID;
       var user = encodeURIComponent(profile.provider + '_' + profile.id);
       if (!profile.id) {
@@ -108,7 +108,7 @@ function loginHandler (provider) {
 
         var token = uniqueId();
         var app = req.session.app;
-        loginRequests[token] = {user: user, token: pw, time: Date.now()};
+        loginRequests[token] = {user: user, secret: pw, token: profile.access_token, time: Date.now()};
         if (app.indexOf('#') === -1) {
           app += '#';
         }
@@ -119,6 +119,7 @@ function loginHandler (provider) {
 }
 
 function login (access, refresh, profile, done) {
+  profile.access_token = access;
   console.log('login', JSON.stringify(profile));
   return done(profile);
 }
