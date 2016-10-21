@@ -3,9 +3,10 @@
 config = {
   "github": {
     "clientID": process.env.GITHUB_ID,
-    "clientSecret": process.env.GITHUB_SECRET
+    "clientSecret": process.env.GITHUB_SECRET,
+  //  "consumerKey": process.env.GITHUB_ID,
+  //  "consumerSecret": process.env.GITHUB_SECRET
   },
-  /*
   "twitter": {
     "consumerKey": process.env.TWITTER_ID,
     "consumerSecret": process.env.TWITTER_SECRET
@@ -26,7 +27,6 @@ config = {
     "consumerKey": process.env.LINKEDIN_ID,
     "consumerSecret": process.env.LINKEDIN_SECRET
   },
-  */
   "expressSession": {
     "secret": process.env.SESSION_SECRET | String(Math.random())
   },
@@ -138,11 +138,13 @@ function addStrategy (name, Strategy, opt) {
 }
 
 addStrategy('github', require('passport-github'));
+/*
 addStrategy('twitter', require('passport-twitter'));
 addStrategy('linkedin', require('passport-linkedin'));
 addStrategy('google', require('passport-google-oauth').OAuth2Strategy, {scope: 'profile'});
 addStrategy('facebook', require('passport-facebook'));
 addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'});
+*/
 
 // ## HTTP-api
 function handleHttp(name, f) { // ###
