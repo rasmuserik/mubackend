@@ -4,8 +4,6 @@ config = {
   "github": {
     "clientID": process.env.GITHUB_ID,
     "clientSecret": process.env.GITHUB_SECRET,
-  //  "consumerKey": process.env.GITHUB_ID,
-  //  "consumerSecret": process.env.GITHUB_SECRET
   },
   "twitter": {
     "consumerKey": process.env.TWITTER_ID,
@@ -28,6 +26,8 @@ config = {
     "consumerSecret": process.env.LINKEDIN_SECRET
   },
   "expressSession": {
+    "resave": false,
+    "saveUninitialized": true,
     "secret": process.env.SESSION_SECRET | String(Math.random())
   },
   "url": process.env.URL,
@@ -37,7 +37,10 @@ config = {
     "password": process.env.COUCHDB_PASS
   },
   port: process.env.PORT || 8888
-}
+};
+
+console.log(config);
+
 
 // ## start express server
 var app = require('express')();
