@@ -129,6 +129,10 @@ function addStrategy (name, Strategy, opt) {
     config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
   app.get('/auth/' + name,
       function (req, res) {
+        if(req.query && req.query.scope) {
+          opt = Object.assign({}, opt);
+          opt.scope = req.query.scope;
+        }
         req.session.app = req.url.replace(/^[^?]*./, '');
         return passport.authenticate(name, opt)(req, res);
       });
@@ -143,7 +147,10 @@ addStrategy('google', require('passport-google-oauth').OAuth2Strategy, {scope: '
 addStrategy('facebook', require('passport-facebook'));
 addStrategy('wordpress', require('passport-wordpress').Strategy, {scope: 'auth'});
 */
-
+app.get('/auth/result/:token', function(req, res) {
+  res.end(JSON.stringify(loginRequests[req.params.token]));
+  delete loginRequests[req.params.token];
+});
 // ## HTTP-api
 function handleHttp(name, f) { // ###
   app.all('/mu/' + name, function(req, res) {
