@@ -1,18 +1,11 @@
-// # server.js 
+// # MuBackend
 //
-// ## Load config
-//
-var configFile = process.argv[process.argv.length - 1];
-if (configFile.slice(-5) !== '.json') {
-  console.log('Warning: backend needs .json config file as argument.');
-  console.log('using default config-file at /solsort/mubackend.json');
-  configFile = '/solsort/mubackend.json';
-}
 config = {
   "github": {
     "clientID": process.env.GITHUB_ID,
     "clientSecret": process.env.GITHUB_SECRET
   },
+  /*
   "twitter": {
     "consumerKey": process.env.TWITTER_ID,
     "consumerSecret": process.env.TWITTER_SECRET
@@ -33,6 +26,7 @@ config = {
     "consumerKey": process.env.LINKEDIN_ID,
     "consumerSecret": process.env.LINKEDIN_SECRET
   },
+  */
   "expressSession": {
     "secret": process.env.SESSION_SECRET | String(Math.random())
   },

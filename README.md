@@ -8,3 +8,8 @@
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
 MuBackend is an authentication server, that allows you to log into a CouchDB using a social login.
+
+ClientID/ClientSecret for different services can be configured here:
+
+- https://github.com/settings/applications
+- ...
