@@ -8,6 +8,9 @@
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
 
+<img src=//mubackend.solsort.com/icon.png>
+
+
 muBackend is a "no-backend",<br>
 responisible for handling<br>
 various social media logins<br>
