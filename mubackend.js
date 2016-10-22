@@ -135,7 +135,9 @@ function addStrategy (name, Strategy, opt) {
         if(!req.query || !req.query.url) {
           return res.end("missing url parameter");
         }
+        console.log(process.env);
         console.log(config.clientRegExp, req.query.url, req.query.url.match(config.clientRegExp));
+        console.log(process.env.CLIENT_REGEXP);
         if(!req.query.url.match(config.clientRegExp)) {
           return res.end("invalid callback url");
         }
