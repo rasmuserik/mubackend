@@ -8,17 +8,17 @@
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
 
-muBackend is a "no-backend",\
-responisible for handling\
-various social media logins\
-and create corresponding users\
+muBackend is a "no-backend",<br>
+responisible for handling<br>
+various social media logins<br>
+and create corresponding users<br>
 in a CouchDB.
 
-It is deployed\
+It is deployed<br>
 via Docker Hub.
 
-Configured via\
-the following\
+Configured via<br>
+the following<br>
 environment vars:
 
 - `GITHUB_ID` `GITHUB_SECRET` oauth from https://github.com/settings/applications
