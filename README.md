@@ -12,7 +12,7 @@
 
 
 muBackend is a no-backend<br>
-- used by other apps -<br>
+&dash; used by other apps &dash;<br>
 responsible for handling<br>
 various social media logins<br>
 and create corresponding users<br>
