@@ -31,6 +31,7 @@ config = {
     "secret": process.env.SESSION_SECRET || String(Math.random())
   },
   "url": process.env.URL,
+  "clientRegExp": process.env.CLIENT_REGEXP,
   "couchdb": {
     "url": process.env.COUCHDB_URL,
     "user": process.env.COUCHDB_USER || "admin",
@@ -98,12 +99,14 @@ function loginHandler (provider) {
       }
       getUser(user, function (o) {
         var pw;
-        if (!o.error) {
-          pw = o.plain_pw;
-        } else {
-          pw = uniqueId();
-          profile._json.loginProvider = provider;
-          createUser(user, pw, profile._json);
+        if(-1 !== req.session.scope.indexOf("couchdb")) {
+          if (!o.error) {
+            pw = o.plain_pw;
+          } else {
+            pw = uniqueId();
+            profile._json.loginProvider = provider;
+            createUser(user, pw, profile._json);
+          }
         }
 
         var token = uniqueId();
@@ -129,10 +132,15 @@ function addStrategy (name, Strategy, opt) {
     config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
   app.get('/auth/' + name,
       function (req, res) {
-        if(req.query && req.query.scope) {
-          opt = Object.assign({}, opt);
-          opt.scope = req.query.scope;
+        if(!req.query || !req.query.scope || !req.query.url) {
+          return res.end("missing scope or url parameter");
         }
+        if(!req.query.url.match(config.clientRegExp)) {
+          return res.end("invalid callback url");
+        }
+        opt = Object.assign({}, opt);
+        opt.scope = req.query.scope.replace(",couchdb","").replace(/couchdb,?/,"");
+        req.session.scope = req.query.scope;
         req.session.app = req.query.url;
         return passport.authenticate(name, opt)(req, res);
       });
