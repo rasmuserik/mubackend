@@ -11,8 +11,9 @@
 ![mu](https://mubackend.solsort.com/icon.png)
 
 
-muBackend is a "no-backend",<br>
-responisible for handling<br>
+muBackend is a no-backend<br>
+- used by other apps -<br>
+responsible for handling<br>
 various social media logins<br>
 and create corresponding users<br>
 in a CouchDB.
