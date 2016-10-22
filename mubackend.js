@@ -31,7 +31,7 @@ config = {
     "secret": process.env.SESSION_SECRET || String(Math.random())
   },
   "url": process.env.URL,
-  "clientRegExp": process.env.CLIENT_REGEXP,
+  "clientRegExp": process.env.CLIENT_REGEXP || "^missing CLIENT_REGEXP$",
   "couchdb": {
     "url": process.env.COUCHDB_URL,
     "user": process.env.COUCHDB_USER || "admin",
@@ -139,9 +139,11 @@ function addStrategy (name, Strategy, opt) {
         if(!req.query.url.match(config.clientRegExp)) {
           return res.end("invalid callback url");
         }
-        opt = Object.assign({}, opt);
-        opt.scope = req.query.scope.replace(",couchdb","").replace(/couchdb,?/,"");
-        req.session.scope = req.query.scope;
+        if(req.query.scope) {
+          opt = Object.assign({}, opt);
+          opt.scope = req.query.scope.replace(",couchdb","").replace(/couchdb,?/,"");
+          req.session.scope = req.query.scope;
+        }
         req.session.app = req.query.url;
         return passport.authenticate(name, opt)(req, res);
       });
