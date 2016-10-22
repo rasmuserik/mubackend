@@ -91,7 +91,6 @@ var loginRequests = {};
 function loginHandler (provider) {
   return function (req, res) {
     passport.authenticate(provider)(req, res, function (profile) {
-      //console.log('auth', req, res, profile);
       if (profile.provider === 'Wordpress') profile.id = profile._json.ID;
       var user = encodeURIComponent(profile.provider + '_' + profile.id);
       if (!profile.id) {
@@ -135,9 +134,6 @@ function addStrategy (name, Strategy, opt) {
         if(!req.query || !req.query.url) {
           return res.end("missing url parameter");
         }
-        console.log(process.env);
-        console.log(config.clientRegExp, req.query.url, req.query.url.match(config.clientRegExp));
-        console.log(process.env.CLIENT_REGEXP);
         if(!req.query.url.match(config.clientRegExp)) {
           return res.end("invalid callback url");
         }
@@ -145,6 +141,8 @@ function addStrategy (name, Strategy, opt) {
           opt = Object.assign({}, opt);
           opt.scope = req.query.scope.replace(",couchdb","").replace(/couchdb,?/,"");
           req.session.scope = req.query.scope;
+        } else {
+          req.session.scope = "";
         }
         req.session.app = req.query.url;
         return passport.authenticate(name, opt)(req, res);
