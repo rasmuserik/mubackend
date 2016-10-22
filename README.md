@@ -8,7 +8,7 @@
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
 
-<img src=//mubackend.solsort.com/icon.png>
+![mu](https://mubackend.solsort.com/icon.png)
 
 
 muBackend is a "no-backend",<br>
