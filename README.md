@@ -7,9 +7,22 @@
 [![npm](https://img.shields.io/npm/v/mubackend.svg)](https://www.npmjs.com/package/mubackend)
 [![npm](https://img.shields.io/npm/l/mubackend.svg)]()
 
-MuBackend is an authentication server, that allows you to log into a CouchDB using a social login.
 
-ClientID/ClientSecret for different services can be configured here:
+muBackend is a "no-backend",\
+responisible for handling\
+various social media logins\
+and create corresponding users\
+in a CouchDB.
 
-- https://github.com/settings/applications
-- ...
+It is deployed\
+via Docker Hub.
+
+Configured via\
+the following\
+environment vars:
+
+- `GITHUB_ID` `GITHUB_SECRET` oauth from https://github.com/settings/applications
+- `COUCHDB_URL` `COUCHDB_USER` `COUCHDB_PASS` couch credentials
+- `CLIENT_REGEXP` allowed client domains
+- `SESSION_SECRET` unique / unguessable string for sessions
+- `PORT` port to run the server on

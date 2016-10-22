@@ -191,4 +191,4 @@ app.get('/cors/', function (req, res) {
 
 // ## Hosting of static resources
 //
-app.use('/mu/', require('express').static('./'));
+app.use('/', require('express').static('./'));
