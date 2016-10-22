@@ -150,6 +150,9 @@ function addStrategy (name, Strategy, opt) {
   app.get('/' + callbackName, loginHandler(name));
 }
 
+app.get('/', function(req, res) {
+  res.redirect("https://github.com/solsort/mubackend");
+});
 addStrategy('github', require('passport-github'));
 /*
 addStrategy('twitter', require('passport-twitter'));
