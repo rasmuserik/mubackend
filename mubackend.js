@@ -132,9 +132,10 @@ function addStrategy (name, Strategy, opt) {
     config[name].callbackURL = config[name].callbackURL || config.url + callbackName;
   app.get('/auth/' + name,
       function (req, res) {
-        if(!req.query || !req.query.scope || !req.query.url) {
-          return res.end("missing scope or url parameter");
+        if(!req.query || !req.query.url) {
+          return res.end("missing url parameter");
         }
+        console.log(config.clientRegExp, req.query.url, req.query.url.match(config.clientRegExp));
         if(!req.query.url.match(config.clientRegExp)) {
           return res.end("invalid callback url");
         }
