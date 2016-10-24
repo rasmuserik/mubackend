@@ -25,7 +25,7 @@ Configured via<br>
 the following<br>
 environment vars:
 
-- `GITHUB_ID` `GITHUB_SECRET` oauth from https://github.com/settings/applications
+- `GITHUB_ID` `GITHUB_SECRET` oauth from https://github.com/settings/developers
 - `COUCHDB_URL` `COUCHDB_USER` `COUCHDB_PASS` couch credentials
 - `CLIENT_REGEXP` allowed client domains
 - `SESSION_SECRET` unique / unguessable string for sessions
