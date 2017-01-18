@@ -50,7 +50,7 @@ console.log('starting server on port', config.port);
 //
 var crypto = require('crypto');
 var btoa = require('btoa');
-function uniqueId () { return btoa(crypto.randomBytes(12)); }
+function uniqueId () { return btoa(crypto.randomBytes(12)).replace(/[/]/, 'a'); }
 function jsonOrNull(str) { try { return JSON.parse(str);} catch(_) { return undefined; }}
 // ## CouchDB
 //
